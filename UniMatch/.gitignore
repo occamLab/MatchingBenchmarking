@@ -6,4 +6,4 @@ spotify_creds.txt
 __pycache__
 share/
 include/
-.DS_Store
+*/.DS_Store
