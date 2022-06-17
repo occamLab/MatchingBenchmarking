@@ -1,0 +1,8 @@
+bin/
+lib/
+pyvenv.cfg
+spotify_creds.txt
+.cache
+__pycache__
+share/
+include/
