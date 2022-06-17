@@ -13,6 +13,3 @@ class UNIMatch:
 
     def __repr__(self):
         return f"UNIMatch({self.queryPt}, {self.trainPt})"
-
-obj = UNIMatch(1, 2, 3, 4)
-print(obj)
