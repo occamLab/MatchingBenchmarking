@@ -20,7 +20,7 @@ class SuperGlue(AlgorithmObj):
     def __init__(self):
         pass
 
-class Orb2(AlgorithmObj):
+class Orb1(AlgorithmObj):
 
     def __init__(self, img1, img2):
         super().__init__(img1, img2)
