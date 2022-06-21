@@ -31,12 +31,12 @@ class Orb(AlgorithmObj):
         orb = cv2.ORB_create()
 
         # Find the keypoints and descriptors with ORB
-        query_keypoints, des1 = orb.detectAndCompute(self.query_image, None)
-        train_keypoints, des2 = orb.detectAndCompute(self.train_image, None)
+        query_keypoints, query_descriptors = orb.detectAndCompute(self.query_image, None)
+        train_keypoints, train_descriptors = orb.detectAndCompute(self.train_image, None)
 
         # Get matches from keypoints and descriptors
         bf = cv2.BFMatcher(cv2.NORM_L2, crossCheck=True)
-        matches = bf.match(des1, des2)
+        matches = bf.match(query_descriptors, train_descriptors)
 
         # TODO: Add ratio test for ORB algorithm
         return sorted(matches, key=lambda x: x.distance), query_keypoints, train_keypoints
