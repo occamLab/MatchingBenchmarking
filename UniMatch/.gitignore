@@ -7,3 +7,4 @@ __pycache__
 share/
 include/
 */.DS_Store
+models/
