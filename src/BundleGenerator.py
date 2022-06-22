@@ -1,6 +1,5 @@
 import os
 import pickle
-from tkinter import image_names
 
 class BundleGenerator:
 
