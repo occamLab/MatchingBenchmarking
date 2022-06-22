@@ -1,15 +1,8 @@
-import io
 from pathlib import Path
 import argparse
-import cv2
 import matplotlib.cm as cm
-import time
 import torch
-from flask import Flask, request, jsonify
-import numpy as np
-from PIL import Image
-import base64 as b64
-import json
+import matplotlib.pyplot as plt
 
 from models.matching import Matching
 from models.utils import (AverageTimer, VideoStreamer,
@@ -153,7 +146,8 @@ def get_superglue_matches(query_image, train_image):
     return final_list, mkpts0, mkpts1
 
 def draw_superglue_matches():
-    return out
+    plt.imshow(out)
+    plt.show()
 
 
 

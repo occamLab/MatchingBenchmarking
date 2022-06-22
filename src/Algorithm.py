@@ -58,7 +58,8 @@ class Orb(AlgorithmObj):
     def draw_matches(self):
         # Draw first 10 matches
         img3 = cv2.drawMatches(self.query_image, self.query_keypoints, self.train_image, self.train_keypoints, self.matches[:50], self.train_image, flags=2)
-        plt.imshow(img3), plt.show()
+        plt.imshow(img3)
+        plt.show(img3)
     
     def get_uni_matches(self):
         # Creates 
