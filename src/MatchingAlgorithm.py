@@ -6,20 +6,54 @@ from SuperGlue import get_superglue_matches, draw_superglue_matches
 
 
 class MatchingAlgorithm(ABC):
+    """
+    Abstract class representing a Matching Algorithm object.
+
+    Instance Attributes:
+        query_image (numpy.ndarray): The query image passed into the algorithm.
+        train_image (numpy.ndarray): The train image passed into the algorithm.
+    """
     def __init__(self, query_image, train_image):
         self.query_image = query_image
         self.train_image = train_image
 
     @abstractmethod
+    def get_matches(self):
+        """
+        Runs the algorithm on the input images and returns a list of matches.
+
+        Returns:
+            matches (list): A list of matches.
+            query_keypoints (list): A list of keypoints in the query image.
+            train_keypoints (list): A list of keypoints in the train image.
+        """
+        pass
+
+    @abstractmethod
     def draw_matches(self):
+        """
+        Visualizes the matches between the query and train images.
+
+        Returns:
+            (None): uses matplotlib to show the matches on the images.
+        """
         pass
 
     @abstractmethod
     def get_uni_matches(self):
+        """
+        Creates a list of UNIMatch objects representing the matches between the query and train images.
+
+        Returns:
+            uniMatches (list): A list of UNIMatch objects.
+        """
         pass
 
 
 class SuperGlueMatcher(MatchingAlgorithm):
+    """
+    Matching Algorithm that uses SuperGlue to match keypoints between two images.
+    """
     def __init__(self, query_image, train_image):
         super().__init__(query_image, train_image)
         (
@@ -50,6 +84,9 @@ class SuperGlueMatcher(MatchingAlgorithm):
 
 
 class OrbMatcher(MatchingAlgorithm):
+    """
+    Matching Algorithm that uses ORB to match keypoints between two images.
+    """
     def __init__(self, query_image, train_image):
         super().__init__(query_image, train_image)
         self.matches, self.query_keypoints, self.train_keypoints = self.get_matches()
@@ -114,6 +151,9 @@ class OrbMatcher(MatchingAlgorithm):
 
 
 class SiftMatcher(MatchingAlgorithm):
+    """
+    Matching Algorithm that uses SIFT to match keypoints between two images.
+    """
     def __init__(self, query_image, train_image):
         super().__init__(query_image, train_image)
         (
