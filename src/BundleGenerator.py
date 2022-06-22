@@ -1,35 +1,37 @@
 import os
 import pickle
 
-class BundleGenerator:
-
-    def __init__(self):
-        self.path = self.get_images_path()
-    
-    def get_images_path(self):
-        return f"{os.path.dirname(os.path.dirname(__file__))}\images\\"
-
-    def generate_bundles(self):
-        # query_path
-        bundles = []
-        zip(os.listdir(self.path))
-
-    
-    def save_bundles(self):
-        bundles_file_path = f"{self.path}bundles.pkl"
-        with open(bundles_file_path, 'wb') as bundles_file:
-            pickle.dump(Bundle(), bundles_file, pickle.HIGHEST_PROTOCOL)
 
 class Bundle:
+    def __init__(self, bundle_data):
+        (
+            self.query_image,
+            self.query_image_depth_map,
+            self.query_image_confidence_map,
+            self.query_image_pose,
+            self.query_image_intrinsics,
+            self.train_image,
+            self.train_image_depth_map,
+            self.train_image_confidence_map,
+            self.train_image_pose,
+        ) = bundle_data
 
-    def __init__(self, query_image, train_image):
-        self.query_image = "a"
-        self.train_image = "b"
-        # depth_maps of both iamges
-        # confidence_maps of bot image
-        # poses of both images 
-        # intrinsics of both images
+
+class BundleGenerator:
+
+    images_path = f"{os.path.dirname(os.path.dirname(__file__))}\images\\"
+
+    def __init__(self):
+        self.bundles = self.generate_bundles()
+
+    def generate_bundles(self):
+        bundles_data = zip(os.listdir(self.images_path))
+        return [Bundle(bundle_data) for bundle_data in bundles_data]
+
+    def save_bundles(self, bundles):
+        bundles_file_path = f"{self.images_path}bundles.pkl"
+        with open(bundles_file_path, "wb") as bundles_file:
+            pickle.dump(bundles, bundles_file, pickle.HIGHEST_PROTOCOL)
+
 
 # Predict where the point on the train image should be based off of camera pose and depth data, compare that to match given by matching algorithm
-
-print(BundleGenerator().save_bundles())
