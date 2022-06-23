@@ -59,10 +59,10 @@ class BundleGenerator:
 
     images_path = f"{os.path.dirname(os.path.dirname(__file__))}\\bundle_data\\"
 
-    def __init__(self):
-        self.bundles = self.generate_bundles()
+    def __init__(self, images_data):
+        self.bundles = self.generate_bundles(images_data)
 
-    def generate_bundles(self):
+    def generate_bundles(self, images_data):
         """
         Generates a list bundle objects from data fetched from the firebase
         server.
@@ -70,10 +70,13 @@ class BundleGenerator:
         Returns:
             A list of bundle objects.
         """
-        bundles_data = zip(os.listdir(self.images_path))
+        bundles_data = []
+        for i in range(0, len(images_data) - 1):
+            bundles_data.append(images_data[i] + images_data[i + 1])
+
         return [Bundle(bundle_data) for bundle_data in bundles_data]
 
-    def save_bundles(self, bundles):
+    def save_bundles(self):
         """
         Saves a list of bundle objects to a pickle file (images/bundles.pkl).
 
@@ -82,4 +85,4 @@ class BundleGenerator:
         """
         bundles_file_path = f"{self.images_path}bundles.pkl"
         with open(bundles_file_path, "wb") as bundles_file:
-            pickle.dump(bundles, bundles_file, pickle.HIGHEST_PROTOCOL)
+            pickle.dump(self.bundles, bundles_file, pickle.HIGHEST_PROTOCOL)
