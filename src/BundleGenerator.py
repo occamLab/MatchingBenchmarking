@@ -57,7 +57,7 @@ class BundleGenerator:
         bundles (list): A list of bundle objects.
     """
 
-    images_path = f"{os.path.dirname(os.path.dirname(__file__))}\images\\"
+    images_path = f"{os.path.dirname(os.path.dirname(__file__))}\\bundle_data\\"
 
     def __init__(self):
         self.bundles = self.generate_bundles()

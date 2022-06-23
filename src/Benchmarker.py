@@ -37,7 +37,7 @@ class Benchmarker:
         Returns: A list of Bundle objects.
         """
         bundles_path = (
-            f"{os.path.dirname(os.path.dirname(__file__))}\\images\\bundles.pkl"
+            f"{os.path.dirname(os.path.dirname(__file__))}\\bundle_data\\bundles.pkl"
         )
         with open(bundles_path, "rb") as bundles_file:
             bundles = pickle.load(bundles_file)

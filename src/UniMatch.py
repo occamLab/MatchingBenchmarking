@@ -7,6 +7,7 @@ class UNIPoint:
         x (float): The x coordinate of the keypoint.
         y (float): The y coordinate of the keypoint.
     """
+
     def __init__(self, x, y):
         self.x = x
         self.y = y
@@ -25,6 +26,7 @@ class UNIMatch:
         queryPt (UNIPoint): The UNIPoint in the query image.
         trainPt (UNIPoint): The UNIPoint in the train image.
     """
+
     def __init__(self, x1, y1, x2, y2):
         self.queryPt = UNIPoint(x1, y1)
         self.trainPt = UNIPoint(x2, y2)
