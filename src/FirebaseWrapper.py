@@ -5,8 +5,10 @@ import firebase_admin
 from firebase_admin import credentials, storage
 import numpy as np
 import cv2
+import json
+from ast import literal_eval
 
-cred = credentials.Certificate("src/serviceAccountKey.json")
+cred = credentials.Certificate("serviceAccountKey.json")
 app = firebase_admin.initialize_app(
     cred, {"storageBucket": "depthbenchmarking.appspot.com"}
 )
@@ -30,8 +32,11 @@ class FirebaseDataGatherer:
                 json_blob = self.bucket.get_blob(
                     f"{directory}/000{i}/framemetadata.json"
                 )
-                jsons.append(json_blob)
+                # decodes bytes to valid json
+                json_as_bytes = literal_eval(json_blob.download_as_bytes().decode("utf8"))
+                # append json to list of jsons
+                jsons.append(json.dumps(json_as_bytes))
             except AttributeError:
                 break
             i += 1
-        return jsons
+        return list(zip(images, jsons))
