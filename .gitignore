@@ -11,3 +11,4 @@ include/
 models/
 Scripts/
 serviceAccountKey.json
+bundles.pkl
