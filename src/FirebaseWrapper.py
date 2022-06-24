@@ -6,19 +6,23 @@ from firebase_admin import credentials, storage
 import numpy as np
 import cv2
 from ast import literal_eval
+import subprocess
 
-cred = credentials.Certificate("src/serviceAccountKey.json")
+# sync firebase storage data with local file system
+subprocess.call(['sh', "sync_firebase_storage.sh"])
+
+cred = credentials.Certificate("serviceAccountKey.json")
 app = firebase_admin.initialize_app(
     cred, {"storageBucket": "depthbenchmarking.appspot.com"}
 )
-
 
 class FirebaseDataGatherer:
     def __init__(self):
         self.bucket = storage.bucket()
 
     def get_images_data(self):
-        directory = "visual_alignment_benchmarking/tqO5JKPW1yN66yjjuYiw8cQvvh72/FF972FAC-329A-4834-8156-EF19ADCB9598"
+        # directory = "image_data/visual_alignment_benchmarking/tqO5JKPW1yN66yjjuYiw8cQvvh72/FF972FAC-329A-4834-8156-EF19ADCB9598"
+        directory = "image_data/"
         images_data = []
         i = 1
         while True:

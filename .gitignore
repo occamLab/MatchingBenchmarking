@@ -1,3 +1,4 @@
+.DS_Store
 GoogleService-Info.plist
 bin/
 lib/
@@ -12,3 +13,5 @@ models/
 Scripts/
 serviceAccountKey.json
 bundles.pkl
+image_data/*
+!image_data/.gitkeep
