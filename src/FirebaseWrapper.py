@@ -3,10 +3,10 @@ Wrapper class for pulling data from firebase storage.
 """
 import firebase_admin
 from firebase_admin import credentials, storage
-import numpy as np
 import cv2
-from ast import literal_eval
 import subprocess
+import os
+import json
 
 # sync firebase storage data with local file system
 subprocess.call(['sh', "sync_firebase_storage.sh"])
@@ -21,32 +21,30 @@ class FirebaseDataGatherer:
         self.bucket = storage.bucket()
 
     def get_images_data(self):
-        # directory = "image_data/visual_alignment_benchmarking/tqO5JKPW1yN66yjjuYiw8cQvvh72/FF972FAC-329A-4834-8156-EF19ADCB9598"
-        directory = "image_data/"
+        directory = f"{os.path.dirname(os.path.dirname(__file__))}/image_data/"
         images_data = []
-        i = 1
-        while True:
-            try:
-                image_blob = self.bucket.get_blob(f"{directory}/000{i}/frame.jpg")
-                arr = np.frombuffer(image_blob.download_as_string(), np.uint8)
-                image = cv2.imdecode(arr, cv2.COLOR_BGR2GRAY)
-                json_blob = self.bucket.get_blob(
-                    f"{directory}/000{i}/framemetadata.json"
-                )
-                # decodes bytes to valid json
-                json_data = literal_eval(json_blob.download_as_bytes().decode("utf8"))
-
-                images_data.append(
-                    [
-                        image,
-                        json_data["depthData"],
-                        json_data["confData"],
-                        json_data["pose"],
-                        json_data["intrinsics"],
-                    ]
-                )
-            except AttributeError:
-                break
-            i += 1
-
+        for root, _, files in os.walk(directory):
+            image_data = []
+            for data_file in files:
+                # ignore hidden files
+                if data_file[0] != ".":
+                    # get file path
+                    data = os.path.join(root, data_file)
+                    if data_file[-3:] == "jpg":
+                        # read image
+                        image_data.append([cv2.imread(data)])
+                    else:
+                        # read json
+                        with open(data, "r") as f:
+                            json_data = json.load(f)
+                            image_data.extend(
+                                [
+                                    json_data["depthData"],
+                                    json_data["confData"],
+                                    json_data["pose"],
+                                    json_data["intrinsics"],
+                                ]
+                            )
+            if len(image_data) > 0:
+                images_data.append(image_data)
         return images_data
