@@ -42,8 +42,18 @@ class Bundle:
             self.train_image_intrinsics,
         ) = bundle_data
 
+class Session:
+    """
+    A data structure that represents the data about a session. A session is
+    a collection of images that were captured from a single Firebase session.
 
-class BundleGenerator:
+    Instance Attributes:
+        bundles (list): A list of bundles that represents the data about pairs
+            of images captured in the same session.
+    """
+    def __init__(self, session_data):
+        self.bundles = session_data
+class SessionGenerator:
     """
     Handles creating bundle objects from data fetched from the firebase server
     and saving these bundle objects to a pickle file (images/bundles.pkl) where
@@ -54,24 +64,25 @@ class BundleGenerator:
             on the absolute path of the BundleGenerator.py file.
 
     Instance Attributes:
-        bundles (list): A list of bundle objects.
+        sessions (list): A list of session objects.
     """
 
-    images_path = f"{os.path.dirname(os.path.dirname(__file__))}\\bundle_data\\"
+    sessions_path = f"{os.path.dirname(os.path.dirname(__file__))}/session_data/"
 
-    def __init__(self, images_data):
-        self.bundles = self.generate_bundles(images_data)
+    def __init__(self, sessions_data):
+        self.sessions = self.generate_sessions(sessions_data)
 
-    def generate_bundles(self, sessions_data):
+    def generate_sessions(self, sessions_data):
         """
-        Generates a list bundle objects from data fetched from the firebase
+        Generates a list of session objects from data fetched from the firebase
         server.
 
         Arguments:
-            sessions_data (list): A list of lists which contain data about an image.
+            sessions_data (list): A list of session lists which contain data about all images
+                captured in a single session.
 
         Returns:
-            A list of lists, each list represents a session and contains a
+            A list of session objects, each session contains a
             number of bundles.
         """
         sessions_bundle_data = []
@@ -79,17 +90,14 @@ class BundleGenerator:
             session_bundle_data = []
             for i in range(0, len(images_data) - 1):
                 session_bundle_data.append(Bundle(images_data[i] + images_data[i + 1]))
-            sessions_bundle_data.append(session_bundle_data)
-        print(sessions_bundle_data)
+            sessions_bundle_data.append(Session(session_bundle_data))
         return sessions_bundle_data
 
-    def save_bundles(self):
+    def save_sessions(self):
         """
-        Saves a list of bundle objects to a pickle file (images/bundles.pkl).
-
-        Arguments:
-            bundles (list): A list of bundle objects.
+        Saves a list of session objects to a pickle file (session_data/sessions.pkl).
         """
-        bundles_file_path = f"{self.images_path}bundles.pkl"
-        with open(bundles_file_path, "wb") as bundles_file:
-            pickle.dump(self.bundles, bundles_file, pickle.HIGHEST_PROTOCOL)
+        sessions_file_path = f"{self.sessions_path}sessions.pkl"
+        with open(sessions_file_path, "wb") as sessions_file:
+            print("saved!")
+            pickle.dump(self.sessions, sessions_file, pickle.HIGHEST_PROTOCOL)

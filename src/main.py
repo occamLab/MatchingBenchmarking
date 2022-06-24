@@ -1,12 +1,16 @@
 from FirebaseWrapper import FirebaseDataGatherer
-from BundleGenerator import BundleGenerator, Bundle
+from SessionGenerator import SessionGenerator
 from Benchmarker import Benchmarker
 
 fireBaseDataGatherer = FirebaseDataGatherer()
 images_data = fireBaseDataGatherer.get_images_data()
 
-bundleGenerator = BundleGenerator(images_data)
-bundleGenerator.save_bundles()
+sessionGenerator = SessionGenerator(images_data)
+sessionGenerator.save_sessions()
 
 benchmarker = Benchmarker("A")
-bundles = benchmarker.get_bundles()
+sessions = benchmarker.get_sessions()
+
+for session in sessions:
+    for bundle in session.bundles:
+        print(bundle.query_image_intrinsics)
