@@ -62,19 +62,26 @@ class BundleGenerator:
     def __init__(self, images_data):
         self.bundles = self.generate_bundles(images_data)
 
-    def generate_bundles(self, images_data):
+    def generate_bundles(self, sessions_data):
         """
         Generates a list bundle objects from data fetched from the firebase
         server.
 
-        Returns:
-            A list of bundle objects.
-        """
-        bundles_data = []
-        for i in range(0, len(images_data) - 1):
-            bundles_data.append(images_data[i] + images_data[i + 1])
+        Arguments:
+            sessions_data (list): A list of lists which contain data about an image.
 
-        return [Bundle(bundle_data) for bundle_data in bundles_data]
+        Returns:
+            A list of lists, each list represents a session and contains a
+            number of bundles.
+        """
+        sessions_bundle_data = []
+        for images_data in sessions_data:
+            session_bundle_data = []
+            for i in range(0, len(images_data) - 1):
+                session_bundle_data.append(Bundle(images_data[i] + images_data[i + 1]))
+            sessions_bundle_data.append(session_bundle_data)
+        print(sessions_bundle_data)
+        return sessions_bundle_data
 
     def save_bundles(self):
         """
