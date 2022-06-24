@@ -35,7 +35,7 @@ class Benchmarker:
         Returns: A list of Session objects.
         """
         sessions_path = (
-            f"{os.path.dirname(os.path.dirname(__file__))}\\session_data\\sessions.pkl"
+            f"{os.path.dirname(os.path.dirname(__file__))}/session_data/sessions.pkl"
         )
         with open(sessions_path, "rb") as sessions_file:
             sessions = pickle.load(sessions_file)

@@ -31,7 +31,11 @@ class FirebaseDataGatherer:
             for frame in os.listdir(session_path):
                 frame_data = []
                 frame_path = f"{session_path}{frame}"
-                image, json_file = glob(f"{frame_path}/*")
+                image_data_files = glob(f"{frame_path}/*")
+                if image_data_files[0][-3:] == "jpg":
+                    image, json_file = image_data_files
+                else:
+                    json_file, image = image_data_files
                 frame_data.append([cv2.imread(image)])
                 # read json
                 with open(json_file, "r") as f:
