@@ -10,7 +10,7 @@ from glob import glob
 import json
 
 # sync firebase storage data with local file system
-subprocess.call(["sh", "sync_firebase_storage.sh"])
+# subprocess.call(["sh", "sync_firebase_storage.sh"])
 
 cred = credentials.Certificate("serviceAccountKey.json")
 app = firebase_admin.initialize_app(
@@ -23,7 +23,7 @@ class FirebaseDataGatherer:
         self.bucket = storage.bucket()
 
     def get_images_data(self):
-        path = f"{os.path.dirname(os.path.dirname(__file__))}/image_data/tqO5JKPW1yN66yjjuYiw8cQvvh72/"
+        path = f"{os.path.dirname(os.path.dirname(__file__))}/image_data/50lyHYG52VTfIB2OWMmCBA5elaC3/"
         sessions_data = []
         for session in os.listdir(path):
             session_path = f"{path}{session}/"
@@ -43,6 +43,7 @@ class FirebaseDataGatherer:
                     json_data = json.load(f)
                     frame_data.extend(
                         [
+                            # TODO convert to numpy arrays
                             json_data["depthData"],
                             json_data["confData"],
                             json_data["pose"],

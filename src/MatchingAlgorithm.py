@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 import cv2
 import matplotlib.pyplot as plt
 from UniMatch import UNIMatch
-from SuperGlue import get_superglue_matches, draw_superglue_matches
+# from SuperGlue import get_superglue_matches, draw_superglue_matches
 
 
 class MatchingAlgorithm(ABC):
@@ -14,6 +14,7 @@ class MatchingAlgorithm(ABC):
         train_image (numpy.ndarray): The train image passed into the algorithm.
     """
     def __init__(self, query_image, train_image):
+        # TODO remove images from constructor parameters, don't need to create a new object for each pair.
         self.query_image = query_image
         self.train_image = train_image
 
@@ -50,37 +51,37 @@ class MatchingAlgorithm(ABC):
         pass
 
 
-class SuperGlueMatcher(MatchingAlgorithm):
-    """
-    Matching Algorithm that uses SuperGlue to match keypoints between two images.
-    """
-    def __init__(self, query_image, train_image):
-        super().__init__(query_image, train_image)
-        (
-            self.matches,
-            self.query_keypoints,
-            self.train_keypoints,
-        ) = get_superglue_matches(self.query_image, self.train_image)
+# class SuperGlueMatcher(MatchingAlgorithm):
+#     """
+#     Matching Algorithm that uses SuperGlue to match keypoints between two images.
+#     """
+#     def __init__(self, query_image, train_image):
+#         super().__init__(query_image, train_image)
+#         (
+#             self.matches,
+#             self.query_keypoints,
+#             self.train_keypoints,
+#         ) = get_superglue_matches(self.query_image, self.train_image)
 
-    def get_matches(self):
-        return get_superglue_matches(self.query_image, self.train_image)
+#     def get_matches(self):
+#         return get_superglue_matches(self.query_image, self.train_image)
 
-    def draw_matches(self):
-        return draw_superglue_matches()
+#     def draw_matches(self):
+#         return draw_superglue_matches()
 
-    def get_uni_matches(self):
-        # Create list of UNIMatch objects
-        uniMatches = [
-            UNIMatch(
-                self.matches[i],
-                self.matches[i + 1],
-                self.matches[i + 2],
-                self.matches[i + 3],
-            )
-            for i in range(0, len(self.matches), 4)
-        ]
+#     def get_uni_matches(self):
+#         # Create list of UNIMatch objects
+#         uniMatches = [
+#             UNIMatch(
+#                 self.matches[i],
+#                 self.matches[i + 1],
+#                 self.matches[i + 2],
+#                 self.matches[i + 3],
+#             )
+#             for i in range(0, len(self.matches), 4)
+#         ]
 
-        return uniMatches
+#         return uniMatches
 
 
 class OrbMatcher(MatchingAlgorithm):
