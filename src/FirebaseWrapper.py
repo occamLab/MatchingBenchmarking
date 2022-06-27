@@ -36,6 +36,7 @@ class FirebaseDataGatherer:
                     image, json_file = image_data_files
                 else:
                     json_file, image = image_data_files
+                # TODO the imread returns a numpy array and does not to be in a list
                 frame_data.append([cv2.imread(image)])
                 # read json
                 with open(json_file, "r") as f:
