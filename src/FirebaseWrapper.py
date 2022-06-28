@@ -1,6 +1,7 @@
 """
 Wrapper class for pulling data from firebase storage.
 """
+from cv2 import ROTATE_90_CLOCKWISE
 import firebase_admin
 from firebase_admin import credentials, storage
 import cv2
@@ -33,11 +34,13 @@ class FirebaseDataGatherer:
                 frame_path = f"{session_path}{frame}"
                 image_data_files = glob(f"{frame_path}/*")
                 if image_data_files[0][-3:] == "jpg":
-                    image, json_file = image_data_files
+                    image_file, json_file = image_data_files
                 else:
-                    json_file, image = image_data_files
-                # TODO the imread returns a numpy array and does not to be in a list
-                frame_data.append([cv2.imread(image)])
+                    json_file, image_file = image_data_files
+                formatted_image = cv2.imread(image_file, 0)
+                # formatted_image = cv2.rotate(image, ROTATE_90_CLOCKWISE)
+                frame_data.append(formatted_image)
+
                 # read json
                 with open(json_file, "r") as f:
                     json_data = json.load(f)

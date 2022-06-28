@@ -3,7 +3,7 @@ import cv2
 import matplotlib.pyplot as plt
 from UniMatch import UNIMatch
 
-from SuperGlue import get_superglue_matches, draw_superglue_matches
+# from SuperGlue import get_superglue_matches, draw_superglue_matches
 
 
 class MatchingAlgorithm(ABC):
@@ -45,13 +45,12 @@ class SuperGlueMatcher(MatchingAlgorithm):
     """
     Matching Algorithm that uses SuperGlue to match keypoints between two images.
     """
+
     def __init__(self, query_image, train_image):
         pass
 
     def get_matches(self, query_image, train_image):
-        return self.get_uni_matches(
-            get_superglue_matches(query_image, train_image)
-        )
+        return self.get_uni_matches(get_superglue_matches(query_image, train_image))
 
     def draw_matches(self):
         return draw_superglue_matches()
@@ -93,9 +92,9 @@ class OrbMatcher(MatchingAlgorithm):
 
         # TODO: Add ratio test for ORB algorithm
         return self.matches_to_unimatches(
-                sorted(matches, key=lambda x: x.distance),
-                query_keypoints,
-                train_keypoints,
+            sorted(matches, key=lambda x: x.distance),
+            query_keypoints,
+            train_keypoints,
         )
 
     def matches_to_unimatches(self, matches, query_keypoints, train_keypoints):
