@@ -49,15 +49,51 @@ def map_depth(bundle):
         final_query_image = cv2.circle(
             query_image,
             (int(pixel[0]), int(pixel[1])),
-            10,
+            0,
             (
                 # TODO: Make a better system
-                bundle.query_image_depth_map[i][3] * 255,
-                bundle.query_image_depth_map[i][3] * 255,
-                bundle.query_image_depth_map[i][3] * 255,
+                # bundle.query_image_depth_map[i][3] * 255,
+                # bundle.query_image_depth_map[i][3] * 255,
+                # bundle.query_image_depth_map[i][3] * 255,
+                255,
+                255,
+                255,
             ),
             -1,
         )
+
+    test_pixel = (1000, 1000)
+
+    final_query_image = cv2.circle(
+        query_image,
+        (test_pixel[0], test_pixel[1]),
+        10,
+        (
+            255,
+            255,
+            255,
+        ),
+        -1,
+    )
+
+    corresponding_depth_index = round(test_pixel[0] / 7.5) * 192 + round(
+        test_pixel[1] / 7.5
+    )
+
+    final_query_image = cv2.circle(
+        query_image,
+        (
+            int(pixels[corresponding_depth_index][0]),
+            int(pixels[corresponding_depth_index][1]),
+        ),
+        10,
+        (
+            0,
+            0,
+            0,
+        ),
+        -1,
+    )
     cv2.imwrite(f"query.png", final_query_image)
 
     query_pose = np.array(bundle.query_image_pose).reshape(4, 4).T
@@ -86,14 +122,32 @@ def map_depth(bundle):
         final_train_image = cv2.circle(
             train_image,
             (int(pixel[0]), int(pixel[1])),
-            10,
+            2,
             (
-                bundle.query_image_depth_map[i][3] * 256,
-                bundle.query_image_depth_map[i][3] * 256,
-                bundle.query_image_depth_map[i][3] * 256,
+                bundle.query_image_depth_map[i][3] * 255,
+                bundle.query_image_depth_map[i][3] * 255,
+                bundle.query_image_depth_map[i][3] * 255,
+                # 255,
+                # 255,
+                # 255,
             ),
             -1,
         )
+
+    final_train_image = cv2.circle(
+        train_image,
+        (
+            int(pixels[corresponding_depth_index][0]),
+            int(pixels[corresponding_depth_index][1]),
+        ),
+        10,
+        (
+            0,
+            0,
+            0,
+        ),
+        -1,
+    )
     cv2.imwrite("train.png", final_train_image)
 
 
