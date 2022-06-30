@@ -42,6 +42,7 @@ class Bundle:
             self.train_image_intrinsics,
         ) = bundle_data
 
+
 class Session:
     """
     A data structure that represents the data about a session. A session is
@@ -51,8 +52,11 @@ class Session:
         bundles (list): A list of bundles that represents the data about pairs
             of images captured in the same session.
     """
+
     def __init__(self, session_data):
         self.bundles = session_data
+
+
 class SessionGenerator:
     """
     Handles creating bundle objects from data fetched from the firebase server
