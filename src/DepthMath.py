@@ -1,15 +1,13 @@
-from re import I
 import sys
 import os
 import cv2
 import numpy as np
 from scipy.linalg import inv
-import gc
-from copy import copy, deepcopy
+from copy import copy
 
-sys.path.append(f"{os.path.dirname(os.path.dirname(__file__))}/src/")
+# sys.path.append(f"{os.path.dirname(os.path.dirname(__file__))}/src/")
 from Benchmarker import Benchmarker
-from MatchingAlgorithm import OrbMatcher, SiftMatcher
+from MatchingAlgorithm import OrbMatcher, SiftMatcher, SuperGlueMatcher
 
 
 def map_depth(bundle, keypoints, query_image, train_image):
@@ -167,13 +165,13 @@ def map_depth(bundle, keypoints, query_image, train_image):
     userinput = input("d")
 
 
-session = Benchmarker("Temp").sessions[0]
+session = Benchmarker("Temp").sessions[2]
 
 for bundle in session.bundles:
 
     query_image = copy(bundle.query_image)
     train_image = copy(bundle.train_image)
 
-    new_sift_matcher = SiftMatcher().get_matches(query_image, train_image)
+    new_superglue_matcher = SuperGlueMatcher().get_matches(query_image, train_image)
 
-    map_depth(bundle, new_sift_matcher[:10], query_image, train_image)
+    map_depth(bundle, new_superglue_matcher[:10], query_image, train_image)

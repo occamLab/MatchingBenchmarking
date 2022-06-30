@@ -3,7 +3,7 @@ import cv2
 import matplotlib.pyplot as plt
 from UniMatch import UNIMatch
 
-# from SuperGlue import get_superglue_matches, draw_superglue_matches
+from SuperGlue import get_superglue_matches, draw_superglue_matches
 
 
 class MatchingAlgorithm(ABC):
@@ -46,26 +46,25 @@ class SuperGlueMatcher(MatchingAlgorithm):
     Matching Algorithm that uses SuperGlue to match keypoints between two images.
     """
 
-    def __init__(self, query_image, train_image):
+    def __init__(self):
         pass
 
     def get_matches(self, query_image, train_image):
-        return self.get_uni_matches(get_superglue_matches(query_image, train_image))
+        return self.matches_to_unimatches(*get_superglue_matches(query_image, train_image))
 
     def draw_matches(self):
         return draw_superglue_matches()
 
-    def get_uni_matches(self, matches):
+    def matches_to_unimatches(self, matches, mkpts0, mkpts1):
         # Create list of UNIMatch objects
-        uniMatches = [
-            UNIMatch(
-                matches[i + 1],
+        uniMatches = []
+        for i in range(0, len(matches), 4):
+            uniMatches.append(UNIMatch(
                 matches[i],
+                matches[i + 1],
                 matches[i + 2],
                 matches[i + 3],
-            )
-            for i in range(0, len(matches), 4)
-        ]
+            ))
 
         return uniMatches
 
