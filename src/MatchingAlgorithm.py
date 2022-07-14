@@ -142,7 +142,7 @@ class SiftMatcher(MatchingAlgorithm):
         filtered_matches = [
             match
             for match, nearest_neighbor in matches
-            if match.distance < 0.8 * nearest_neighbor.distance
+            if match.distance < 0.1 * nearest_neighbor.distance
         ]
         return self.matches_to_unimatches(
             filtered_matches, query_keypoints, train_keypoints
@@ -159,8 +159,8 @@ class SiftMatcher(MatchingAlgorithm):
         # Create list of UNIMatch objects
         uniMatches = [
             UNIMatch(
-                coord_array[i + 1],
                 coord_array[i],
+                coord_array[i + 1],
                 coord_array[i + 2],
                 coord_array[i + 3],
             )
@@ -210,8 +210,8 @@ class AkazeMatcher(MatchingAlgorithm):
         # Create list of UNIMatch objects
         uniMatches = [
             UNIMatch(
-                coord_array[i + 1],
                 coord_array[i],
+                coord_array[i + 1],
                 coord_array[i + 2],
                 coord_array[i + 3],
             )
