@@ -2,9 +2,11 @@ import cv2
 import numpy as np
 from scipy.linalg import inv
 from copy import copy
+import matplotlib.pyplot as plt
+from scipy import stats
 
 from Benchmarker import Benchmarker
-from MatchingAlgorithm import OrbMatcher, SiftMatcher
+from MatchingAlgorithm import OrbMatcher, SiftMatcher, AkazeMatcher
 
 def convert_unit_depth_vectors(query_image_depth_map):
     """
@@ -155,7 +157,20 @@ def map_depth(bundle, keypoints, query_image, train_image):
         
         depth_point_to_algo_point_distances.append(np.linalg.norm(algo_matched_point - depth_matched_point))
 
-    print("Average depth point to algo point distance: ", np.mean(depth_point_to_algo_point_distances))
+    # plt.scatter(depth_point_to_algo_point_distances, range(len(depth_point_to_algo_point_distances)))
+    # plt.boxplot(depth_point_to_algo_point_distances)
+
+    # kde = stats.gaussian_kde(depth_point_to_algo_point_distances)
+    # x = np.linspace(0, max(depth_point_to_algo_point_distances), 100)
+    # p = kde(x)
+    # plt.plot(x, p)
+
+    plt.hist(depth_point_to_algo_point_distances)
+    depth_point_to_algo_point_distances = []
+    plt.xlabel("Depth point to algo point distance")
+    plt.ylabel("No. of Points")
+    plt.savefig('depth_point_to_algo_point_distances.png')
+    plt.clf()
     cv2.imwrite("query.png", final_query_image)
     cv2.imwrite("train.png", final_train_image)
     userinput = input("d")
@@ -168,6 +183,6 @@ for bundle in session.bundles:
     query_image = copy(bundle.query_image)
     train_image = copy(bundle.train_image)
 
-    new_superglue_matcher = SiftMatcher().get_matches(query_image, train_image)
+    new_superglue_matcher = AkazeMatcher().get_matches(query_image, train_image)
 
-    map_depth(bundle, new_superglue_matcher[:10], query_image, train_image)
+    map_depth(bundle, new_superglue_matcher, query_image, train_image)

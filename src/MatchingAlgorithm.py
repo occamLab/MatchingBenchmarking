@@ -142,7 +142,58 @@ class SiftMatcher(MatchingAlgorithm):
         filtered_matches = [
             match
             for match, nearest_neighbor in matches
-            if match.distance < 1 * nearest_neighbor.distance
+            if match.distance < 0.8 * nearest_neighbor.distance
+        ]
+        return self.matches_to_unimatches(
+            filtered_matches, query_keypoints, train_keypoints
+        )
+
+    def matches_to_unimatches(self, matches, query_keypoints, train_keypoints):
+
+        coord_array = []
+        for match in matches:
+            x1, y1 = query_keypoints[match.queryIdx].pt
+            x2, y2 = train_keypoints[match.trainIdx].pt
+            coord_array.extend([x1, y1, x2, y2])
+
+        # Create list of UNIMatch objects
+        uniMatches = [
+            UNIMatch(
+                coord_array[i + 1],
+                coord_array[i],
+                coord_array[i + 2],
+                coord_array[i + 3],
+            )
+            for i in range(0, len(coord_array), 4)
+        ]
+
+        return uniMatches
+
+class AkazeMatcher(MatchingAlgorithm):
+    """
+    Matching Algorithm that uses AKAZE to match keypoints between two images.
+    """
+
+    def __init__(self):
+        pass
+
+    def get_matches(self, query_image, train_image):
+        # Initiate AKAZE algorithm
+        akaze = cv2.AKAZE_create()
+
+        # Find the keypoints and descriptors with AKAZE
+        query_keypoints, query_descriptors = akaze.detectAndCompute(query_image, None)
+        train_keypoints, train_descriptors = akaze.detectAndCompute(train_image, None)
+
+        # Get matches from keypoints and descriptors
+        bf = cv2.BFMatcher(cv2.NORM_L2)
+        matches = bf.knnMatch(query_descriptors, train_descriptors, k=2)
+
+        # Apply ratio test (currently set to 1 so it does nothing)
+        filtered_matches = [
+            match
+            for match, nearest_neighbor in matches
+            if match.distance < 0.8 * nearest_neighbor.distance
         ]
         return self.matches_to_unimatches(
             filtered_matches, query_keypoints, train_keypoints
