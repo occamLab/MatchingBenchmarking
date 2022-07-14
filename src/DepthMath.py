@@ -8,7 +8,7 @@ from scipy import stats
 from Benchmarker import Benchmarker
 from MatchingAlgorithm import OrbMatcher, SiftMatcher, AkazeMatcher
 
-def convert_unit_depth_vectors(query_image_depth_map):
+def convert_unit_depth_vectors(bundle):
     """
     Multiplies unit depth vector by it's magnitude.
     """
@@ -32,42 +32,50 @@ def project_depth_onto_image(query_depth_feature_points, focal_length, offset_x,
         pixels.append((pixel_x, pixel_y))
     return pixels    
 
+def plot_depth_map(pixels, image):
+    for i, pixel in enumerate(pixels):
+        output = cv2.circle(
+            image,
+            (int(pixel[0]), int(pixel[1])),
+            1,
+            (
+                bundle.query_image_depth_map[i][3] * 255,
+                bundle.query_image_depth_map[i][3] * 255,
+                bundle.query_image_depth_map[i][3] * 255,
+            ),
+            -1,
+        )
+    return output
+
+def draw_circle(image, keypoint, color):
+    return cv2.circle(
+            image,
+            (keypoint[0], keypoint[1]),
+            20,
+            color,
+            -1,
+        )
+
+
 def map_depth(bundle, keypoints, query_image, train_image):
     ## Depth map of query image
     focal_length = bundle.query_image_intrinsics[0]
     offset_x = bundle.query_image_intrinsics[6]
     offset_y = bundle.query_image_intrinsics[7]
 
-    query_depth_data = convert_unit_depth_vectors(bundle.query_image_depth_map)
+    query_depth_data = convert_unit_depth_vectors(bundle)
     
-    # Actual depth feature points, with magnitude removed from the vector. 
+    # Actual depth feature points, with magnitude removed from the vector.
     query_depth_feature_points = np.array(
         (query_depth_data[0], -query_depth_data[1], -query_depth_data[2])
     ).T
 
     # calculate depths and pixels of feature points
     pixels = project_depth_onto_image(query_depth_feature_points, focal_length, offset_x, offset_y)
-    
-    final_query_image = query_image
 
-    # Plot depth map onto query image
-    for i, pixel in enumerate(pixels):
-        final_query_image = cv2.circle(
-            final_query_image,
-            (int(pixel[0]), int(pixel[1])),
-            1,
-            (
-                255,
-                255,
-                255,
-            ),
-            -1,
-        )
+    final_query_image = plot_depth_map(pixels, query_image)
 
     ## Depth map of train image
-    focal_length = bundle.train_image_intrinsics[0]
-    offset_x = bundle.train_image_intrinsics[6]
-    offset_y = bundle.train_image_intrinsics[7]
 
     query_pose = np.array(bundle.query_image_pose).reshape(4, 4).T
     train_pose = np.array(bundle.train_image_pose).reshape(4, 4).T
@@ -86,21 +94,7 @@ def map_depth(bundle, keypoints, query_image, train_image):
     pixels = []
     pixels = project_depth_onto_image(projected_depth_feature_points, focal_length, offset_x, offset_y)
 
-    final_train_image = train_image
-
-    # Plot transformed depth map onto train image.
-    for i, pixel in enumerate(pixels):
-        final_train_image = cv2.circle(
-            final_train_image,
-            (int(pixel[0]), int(pixel[1])),
-            1,
-            (
-                bundle.query_image_depth_map[i][3] * 255,
-                bundle.query_image_depth_map[i][3] * 255,
-                bundle.query_image_depth_map[i][3] * 255,
-            ),
-            -1,
-        )
+    final_train_image = plot_depth_map(pixels, train_image)
 
     depth_point_to_algo_point_distances = []
     ## Project corresponding query image keypoints onto train image which are matched using depth map data
@@ -116,45 +110,31 @@ def map_depth(bundle, keypoints, query_image, train_image):
         ) * 192 + round(matched_query_keypoint[1] / 7.5)
 
         # Draw query image keypoints
-        final_query_image = cv2.circle(
-            final_query_image,
-            (matched_query_keypoint[0], matched_query_keypoint[1]),
-            20,
-            (
-                0,
-                0,
-                0,
-            ),
-            -1,
-        )
+        final_query_image = draw_circle(final_query_image, matched_query_keypoint, (0, 0, 0))
+
+
         algo_matched_point = np.array((matched_train_keypoint[0], matched_train_keypoint[1]))
         depth_matched_point = np.array((int(pixels[corresponding_depth_index][0]), int(pixels[corresponding_depth_index][1])))
+        
         # Draw train image keypoints, matched using the algorithm
-        final_train_image = cv2.circle(
-            final_train_image,
-            algo_matched_point,
-            20,
-            (
-                0,
-                0,
-                0,
-            ),
-            -1,
-        )
+        final_train_image = draw_circle(final_train_image, algo_matched_point, (0, 0, 0))
 
         # Plots corresponding depth point from query image on train image, matched using the depth data
-        final_train_image = cv2.circle(
+        final_train_image  = draw_circle(final_train_image, depth_matched_point, (255,255,255))
+        
+        # draw line between algo matched point and depth matched point
+        final_train_image = cv2.line(
             final_train_image,
+            algo_matched_point,
             depth_matched_point,
-            20,
             (
                 255,
                 255,
                 255,
             ),
-            -1,
+            1,
         )
-        
+
         depth_point_to_algo_point_distances.append(np.linalg.norm(algo_matched_point - depth_matched_point))
 
     # plt.scatter(depth_point_to_algo_point_distances, range(len(depth_point_to_algo_point_distances)))
@@ -165,7 +145,9 @@ def map_depth(bundle, keypoints, query_image, train_image):
     # p = kde(x)
     # plt.plot(x, p)
 
-    plt.hist(depth_point_to_algo_point_distances)
+    filtered_points = [x for x in depth_point_to_algo_point_distances if x < 100]
+
+    plt.hist(filtered_points)
     depth_point_to_algo_point_distances = []
     plt.xlabel("Depth point to algo point distance")
     plt.ylabel("No. of Points")
@@ -183,6 +165,6 @@ for bundle in session.bundles:
     query_image = copy(bundle.query_image)
     train_image = copy(bundle.train_image)
 
-    new_superglue_matcher = AkazeMatcher().get_matches(query_image, train_image)
+    new_superglue_matcher = SiftMatcher().get_matches(query_image, train_image)
 
     map_depth(bundle, new_superglue_matcher, query_image, train_image)

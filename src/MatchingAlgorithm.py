@@ -40,6 +40,9 @@ class MatchingAlgorithm(ABC):
         """
         pass
 
+    def __repr__(self):
+        pass
+
 class OpenCVAlgorithm(MatchingAlgorithm):
     """
     Class representing an OpenCV Algorithm.
@@ -60,7 +63,7 @@ class OpenCVAlgorithm(MatchingAlgorithm):
         filtered_matches = [
             match
             for match, nearest_neighbor in matches
-            if match.distance < 0.5 * nearest_neighbor.distance
+            if match.distance < 0.8 * nearest_neighbor.distance
         ]
         return self.matches_to_unimatches(
             filtered_matches, query_keypoints, train_keypoints
@@ -86,6 +89,9 @@ class OpenCVAlgorithm(MatchingAlgorithm):
         ]
 
         return uniMatches
+    
+    def __repr__(self):
+        pass
 
 # class SuperGlueMatcher(MatchingAlgorithm):
 #     """
@@ -113,6 +119,8 @@ class OpenCVAlgorithm(MatchingAlgorithm):
 #             ))
 
 #         return uniMatches
+#     def __repr__(self):
+#         return "SuperGlueMatcher"
 
 
 class OrbMatcher(OpenCVAlgorithm):
@@ -130,6 +138,9 @@ class OrbMatcher(OpenCVAlgorithm):
 
     def matches_to_unimatches(self, matches, query_keypoints, train_keypoints):
         return super().matches_to_unimatches(matches, query_keypoints, train_keypoints)
+    
+    def __repr__(self):
+        return "Orb"
 
 
 class SiftMatcher(OpenCVAlgorithm):
@@ -147,6 +158,9 @@ class SiftMatcher(OpenCVAlgorithm):
 
     def matches_to_unimatches(self, matches, query_keypoints, train_keypoints):
         return super().matches_to_unimatches(matches, query_keypoints, train_keypoints)
+    
+    def __repr__(self):
+        return "Sift"
 
 class AkazeMatcher(OpenCVAlgorithm):
     """
@@ -163,3 +177,6 @@ class AkazeMatcher(OpenCVAlgorithm):
 
     def matches_to_unimatches(self, matches, query_keypoints, train_keypoints):
         return super().matches_to_unimatches(matches, query_keypoints, train_keypoints)
+    
+    def __repr__(self):
+        return "Akaze"
