@@ -40,6 +40,52 @@ class MatchingAlgorithm(ABC):
         """
         pass
 
+class OpenCVAlgorithm(MatchingAlgorithm):
+    """
+    Class representing an OpenCV Algorithm.
+    """
+    def __init__(self):
+        super().__init__()
+
+    def get_matches(self, query_image, train_image, algorithm):
+        # Find the keypoints and descriptors with SIFT
+        query_keypoints, query_descriptors = algorithm.detectAndCompute(query_image, None)
+        train_keypoints, train_descriptors = algorithm.detectAndCompute(train_image, None)
+
+        # Get matches from keypoints and descriptors
+        bf = cv2.BFMatcher(cv2.NORM_L2)
+        matches = bf.knnMatch(query_descriptors, train_descriptors, k=2)
+
+        # Apply ratio test (currently set to 1 so it does nothing)
+        filtered_matches = [
+            match
+            for match, nearest_neighbor in matches
+            if match.distance < 0.5 * nearest_neighbor.distance
+        ]
+        return self.matches_to_unimatches(
+            filtered_matches, query_keypoints, train_keypoints
+        )
+
+    def matches_to_unimatches(self, matches, query_keypoints, train_keypoints):
+        # Creates
+        coord_array = []
+        for match in matches:
+            x1, y1 = query_keypoints[match.queryIdx].pt
+            x2, y2 = train_keypoints[match.trainIdx].pt
+            coord_array.extend([x1, y1, x2, y2])
+
+        # Create list of UNIMatch objects
+        uniMatches = [
+            UNIMatch(
+                coord_array[i],
+                coord_array[i + 1],
+                coord_array[i + 2],
+                coord_array[i + 3],
+            )
+            for i in range(0, len(coord_array), 4)
+        ]
+
+        return uniMatches
 
 # class SuperGlueMatcher(MatchingAlgorithm):
 #     """
@@ -69,153 +115,51 @@ class MatchingAlgorithm(ABC):
 #         return uniMatches
 
 
-class OrbMatcher(MatchingAlgorithm):
+class OrbMatcher(OpenCVAlgorithm):
     """
     Matching Algorithm that uses ORB to match keypoints between two images.
     """
 
+    algorithm = cv2.ORB_create()
+
     def __init__(self):
         pass
 
     def get_matches(self, query_image, train_image):
-        # Initiate ORB algorithm
-        orb = cv2.ORB_create()
-
-        # Find the keypoints and descriptors with ORB
-        query_keypoints, query_descriptors = orb.detectAndCompute(query_image, None)
-        train_keypoints, train_descriptors = orb.detectAndCompute(train_image, None)
-
-        # Get matches from keypoints and descriptors
-        bf = cv2.BFMatcher(cv2.NORM_L2, crossCheck=True)
-        matches = bf.match(query_descriptors, train_descriptors)
-
-        # TODO: Add ratio test for ORB algorithm
-        return self.matches_to_unimatches(
-            sorted(matches, key=lambda x: x.distance),
-            query_keypoints,
-            train_keypoints,
-        )
+        return super().get_matches(query_image, train_image, self.algorithm)
 
     def matches_to_unimatches(self, matches, query_keypoints, train_keypoints):
-        # Creates
-        coord_array = []
-        for match in matches:
-            x1, y1 = query_keypoints[match.queryIdx].pt
-            x2, y2 = train_keypoints[match.trainIdx].pt
-            coord_array.extend([x1, y1, x2, y2])
-
-        # Create list of UNIMatch objects
-        uniMatches = [
-            UNIMatch(
-                coord_array[i],
-                coord_array[i + 1],
-                coord_array[i + 2],
-                coord_array[i + 3],
-            )
-            for i in range(0, len(coord_array), 4)
-        ]
-
-        return uniMatches
+        return super().matches_to_unimatches(matches, query_keypoints, train_keypoints)
 
 
-class SiftMatcher(MatchingAlgorithm):
+class SiftMatcher(OpenCVAlgorithm):
     """
     Matching Algorithm that uses SIFT to match keypoints between two images.
     """
 
+    algorithm = cv2.SIFT_create()
+
     def __init__(self):
         pass
 
     def get_matches(self, query_image, train_image):
-        # Initiate SIFT algorithm
-        sift = cv2.SIFT_create()
-
-        # Find the keypoints and descriptors with SIFT
-        query_keypoints, query_descriptors = sift.detectAndCompute(query_image, None)
-        train_keypoints, train_descriptors = sift.detectAndCompute(train_image, None)
-
-        # Get matches from keypoints and descriptors
-        bf = cv2.BFMatcher(cv2.NORM_L2)
-        matches = bf.knnMatch(query_descriptors, train_descriptors, k=2)
-
-        # Apply ratio test (currently set to 1 so it does nothing)
-        filtered_matches = [
-            match
-            for match, nearest_neighbor in matches
-            if match.distance < 0.1 * nearest_neighbor.distance
-        ]
-        return self.matches_to_unimatches(
-            filtered_matches, query_keypoints, train_keypoints
-        )
+        return super().get_matches(query_image, train_image, self.algorithm)
 
     def matches_to_unimatches(self, matches, query_keypoints, train_keypoints):
+        return super().matches_to_unimatches(matches, query_keypoints, train_keypoints)
 
-        coord_array = []
-        for match in matches:
-            x1, y1 = query_keypoints[match.queryIdx].pt
-            x2, y2 = train_keypoints[match.trainIdx].pt
-            coord_array.extend([x1, y1, x2, y2])
-
-        # Create list of UNIMatch objects
-        uniMatches = [
-            UNIMatch(
-                coord_array[i],
-                coord_array[i + 1],
-                coord_array[i + 2],
-                coord_array[i + 3],
-            )
-            for i in range(0, len(coord_array), 4)
-        ]
-
-        return uniMatches
-
-class AkazeMatcher(MatchingAlgorithm):
+class AkazeMatcher(OpenCVAlgorithm):
     """
     Matching Algorithm that uses AKAZE to match keypoints between two images.
     """
 
+    algorithm = cv2.AKAZE_create()
+
     def __init__(self):
         pass
 
     def get_matches(self, query_image, train_image):
-        # Initiate AKAZE algorithm
-        akaze = cv2.AKAZE_create()
-
-        # Find the keypoints and descriptors with AKAZE
-        query_keypoints, query_descriptors = akaze.detectAndCompute(query_image, None)
-        train_keypoints, train_descriptors = akaze.detectAndCompute(train_image, None)
-
-        # Get matches from keypoints and descriptors
-        bf = cv2.BFMatcher(cv2.NORM_L2)
-        matches = bf.knnMatch(query_descriptors, train_descriptors, k=2)
-
-        # Apply ratio test (currently set to 1 so it does nothing)
-        filtered_matches = [
-            match
-            for match, nearest_neighbor in matches
-            if match.distance < 0.8 * nearest_neighbor.distance
-        ]
-        return self.matches_to_unimatches(
-            filtered_matches, query_keypoints, train_keypoints
-        )
+        return super().get_matches(query_image, train_image, self.algorithm)
 
     def matches_to_unimatches(self, matches, query_keypoints, train_keypoints):
-
-        coord_array = []
-        for match in matches:
-            x1, y1 = query_keypoints[match.queryIdx].pt
-            x2, y2 = train_keypoints[match.trainIdx].pt
-            coord_array.extend([x1, y1, x2, y2])
-
-        # Create list of UNIMatch objects
-        uniMatches = [
-            UNIMatch(
-                coord_array[i],
-                coord_array[i + 1],
-                coord_array[i + 2],
-                coord_array[i + 3],
-            )
-            for i in range(0, len(coord_array), 4)
-        ]
-
-        return uniMatches
+        return super().matches_to_unimatches(matches, query_keypoints, train_keypoints)
