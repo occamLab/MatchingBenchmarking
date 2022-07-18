@@ -168,3 +168,4 @@ for bundle in session.bundles:
     new_superglue_matcher = SiftMatcher().get_matches(query_image, train_image)
 
     map_depth(bundle, new_superglue_matcher, query_image, train_image)
+    

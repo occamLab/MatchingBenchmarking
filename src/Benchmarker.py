@@ -5,6 +5,7 @@ from scipy.linalg import inv
 from copy import copy
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 from scipy import stats
 
 class Benchmarker:
@@ -29,9 +30,10 @@ class Benchmarker:
         Algorithms (list): A list of MatchingAlgorithm objects to be benchmarked.
     """
 
-    def __init__(self, algorithms):
+    def __init__(self, algorithms, values):
         self.sessions = self.get_sessions()
         self.algorithms = algorithms
+        self.sweep_values = values
 
     def get_sessions(self):
         """
@@ -161,30 +163,30 @@ class Benchmarker:
             ) * 192 + round(matched_query_keypoint[1] / 7.5)
 
             # Draw query image keypoints
-            final_query_image = self.draw_circle(final_query_image, matched_query_keypoint, (255, 255, 255))
+            # final_query_image = self.draw_circle(final_query_image, matched_query_keypoint, (255, 255, 255))
 
 
             algo_matched_point = np.array((matched_train_keypoint[0], matched_train_keypoint[1]))
             depth_matched_point = np.array((int(pixels[corresponding_depth_index][0]), int(pixels[corresponding_depth_index][1])))
             
             # Draw train image keypoints, matched using the algorithm
-            final_train_image = self.draw_circle(final_train_image, algo_matched_point, (0, 0, 0))
+            # final_train_image = self.draw_circle(final_train_image, algo_matched_point, (0, 0, 0))
 
             # Plots corresponding depth point from query image on train image, matched using the depth data
-            final_train_image  = self.draw_circle(final_train_image, depth_matched_point, (255,255,255))
+            # final_train_image  = self.draw_circle(final_train_image, depth_matched_point, (255,255,255))
             
             # draw line between algo matched point and depth matched point
-            final_train_image = cv2.line(
-                final_train_image,
-                algo_matched_point,
-                depth_matched_point,
-                (
-                    255,
-                    255,
-                    255,
-                ),
-                1,
-            )
+            # final_train_image = cv2.line(
+            #     final_train_image,
+            #     algo_matched_point,
+            #     depth_matched_point,
+            #     (
+            #         255,
+            #         255,
+            #         255,
+            #     ),
+            #     1,
+            # )
 
             depth_point_to_algo_point_distances.append(np.linalg.norm(algo_matched_point - depth_matched_point))
 
@@ -195,44 +197,67 @@ class Benchmarker:
         produced by the bundle data for each image pair.
         """
         total_points_less_than_100 = []
+        total_points = []
+        correct_vs_incorrect_for_one_algo = []
         for algorithm in self.algorithms:
-            total_points_less_than_100_for_one_algo = []
-            for session in self.sessions:
-                print(repr(algorithm), session)
-                for bundle in session.bundles:
-                    query_image = copy(bundle.query_image)
-                    train_image = copy(bundle.train_image)
+            for ratio in self.sweep_values:
+                for session in self.sessions:
+                    print(repr(algorithm), session, ratio)
+                    for bundle in session.bundles:
+                        query_image = copy(bundle.query_image)
+                        train_image = copy(bundle.train_image)
 
-                    matches = algorithm.get_matches(query_image, train_image)
+                        matches = algorithm.get_matches(query_image, train_image, ratio)
 
-                    try:
-                        distances, final_query_image, final_train_image = self.compare_matches(bundle, matches, query_image, train_image)
-                    except Exception as e:
-                        print(e)
-                    # plt.scatter(depth_point_to_algo_point_distances, range(len(depth_point_to_algo_point_distances)))
-                    # plt.boxplot(depth_point_to_algo_point_distances)
+                        try:
+                            distances, final_query_image, final_train_image = self.compare_matches(bundle, matches, query_image, train_image)
+                        except Exception as e:
+                            print(e)
+                        # plt.scatter(depth_point_to_algo_point_distances, range(len(depth_point_to_algo_point_distances)))
+                        # plt.boxplot(depth_point_to_algo_point_distances)
 
-                    # kde = stats.gaussian_kde(depth_point_to_algo_point_distances)
-                    # x = np.linspace(0, max(depth_point_to_algo_point_distances), 100)
-                    # p = kde(x)
-                    # plt.plot(x, p)
-
-                    filtered_points = [x for x in distances if x < 100]
-                    total_points_less_than_100_for_one_algo.append(len(filtered_points))
-                    # plt.hist(filtered_points)
-                    # plt.xlabel("Depth point to algo point distance")
-                    # plt.ylabel("No. of Points")
-                    # plt.savefig('depth_point_to_algo_point_distances.png')
-                    # plt.clf()
-                    # cv2.imwrite("query.png", final_query_image)
-                    # cv2.imwrite("train.png", final_train_image)
-                    # userinput = input("d")
-            total_points_less_than_100.append(sum(total_points_less_than_100_for_one_algo))
-        names = []
-        for algorithm in self.algorithms:
-            names.append(repr(algorithm))
-        plt.bar(names, total_points_less_than_100)
-        plt.savefig("total_points_less_than_100.png")
+                        # kde = stats.gaussian_kde(depth_point_to_algo_point_distances)
+                        # x = np.linspace(0, max(depth_point_to_algo_point_distances), 100)
+                        # p = kde(x)
+                        # plt.plot(x, p)
+                        
+                        filtered_points = [x for x in distances if x < 100]
+                        try:
+                            filtered_points = [x for x in filtered_points if x < np.quantile(copy(filtered_points), 0.25, axis=0)]
+                            print(len(filtered_points))
+                        except:
+                            continue
+                        total_points_less_than_100.append(len(filtered_points))
+                        total_points.append(len(distances))
+                        # plt.hist(filtered_points)
+                        # plt.xlabel("Depth point to algo point distance")
+                        # plt.ylabel("No. of Points")
+                        # plt.savefig('depth_point_to_algo_point_distances.png')
+                        # plt.clf()
+                        # cv2.imwrite("query.png", final_query_image)
+                        # cv2.imwrite("train.png", final_train_image)
+                        # userinput = input("d")
+                try:
+                    correct_vs_incorrect_for_one_algo.append((ratio, sum(total_points_less_than_100) / sum(total_points), algorithm))
+                except:
+                    print(len(total_points_less_than_100))
+                # TODO: add quantile i.e. take bottom 10% of points
+        print("total", len(correct_vs_incorrect_for_one_algo))
+        for x in correct_vs_incorrect_for_one_algo:
+            if repr(x[-1]) == "Orb":
+                plt.plot(x[0], x[1], 'o', color='red', label="Orb")
+            elif repr(x[-1]) == "Sift":
+                plt.plot(x[0], x[1], '^', color='green', label="Sift")
+            elif repr(x[-1]) == "Akaze":
+                plt.plot(x[0], x[1], '*', color ='blue', label="Akaze")
+        plt.xticks(self.sweep_values)
+        plt.xlabel("Quantile values")
+        plt.ylabel("Ratio of correct/total matches")
+        label_orb = mpatches.Patch(color='red', label='Orb')
+        label_sift = mpatches.Patch(color='green', label='Sift')
+        label_akaze = mpatches.Patch(color='blue', label='Akaze')
+        plt.legend(handles=[label_orb, label_sift, label_akaze])
+        plt.savefig("Ratio test.png")
 
 
 

@@ -9,6 +9,6 @@ from MatchingAlgorithm import OrbMatcher, SiftMatcher, AkazeMatcher
 # sessionGenerator = SessionGenerator(images_data)
 # sessionGenerator.save_sessions()
 
-benchmarker = Benchmarker([OrbMatcher(), SiftMatcher(), AkazeMatcher()])
+benchmarker = Benchmarker([OrbMatcher(), SiftMatcher(), AkazeMatcher()], [0.25, 0.45, 0.65, 0.85])
 benchmarker.benchmark()
 

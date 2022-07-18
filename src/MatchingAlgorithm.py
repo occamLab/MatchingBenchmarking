@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 import cv2
 import matplotlib.pyplot as plt
 from UniMatch import UNIMatch
+import numpy as np
 
 # from SuperGlue import get_superglue_matches, draw_superglue_matches
 
@@ -50,7 +51,7 @@ class OpenCVAlgorithm(MatchingAlgorithm):
     def __init__(self):
         super().__init__()
 
-    def get_matches(self, query_image, train_image, algorithm):
+    def get_matches(self, query_image, train_image, algorithm, quantile=0.25):
         # Find the keypoints and descriptors with SIFT
         query_keypoints, query_descriptors = algorithm.detectAndCompute(query_image, None)
         train_keypoints, train_descriptors = algorithm.detectAndCompute(train_image, None)
@@ -59,12 +60,18 @@ class OpenCVAlgorithm(MatchingAlgorithm):
         bf = cv2.BFMatcher(cv2.NORM_L2)
         matches = bf.knnMatch(query_descriptors, train_descriptors, k=2)
 
+        ratio_tests = []
+        for match, nearest_neighbor in matches:
+            ratio_tests.append(match.distance / nearest_neighbor.distance)
+        
+        ratio = np.quantile(ratio_tests, quantile)
         # Apply ratio test (currently set to 1 so it does nothing)
         filtered_matches = [
             match
             for match, nearest_neighbor in matches
-            if match.distance < 0.8 * nearest_neighbor.distance
+            if match.distance/nearest_neighbor.distance < ratio
         ]
+
         return self.matches_to_unimatches(
             filtered_matches, query_keypoints, train_keypoints
         )
@@ -133,8 +140,8 @@ class OrbMatcher(OpenCVAlgorithm):
     def __init__(self):
         pass
 
-    def get_matches(self, query_image, train_image):
-        return super().get_matches(query_image, train_image, self.algorithm)
+    def get_matches(self, query_image, train_image, ratio):
+        return super().get_matches(query_image, train_image, self.algorithm, ratio)
 
     def matches_to_unimatches(self, matches, query_keypoints, train_keypoints):
         return super().matches_to_unimatches(matches, query_keypoints, train_keypoints)
@@ -153,8 +160,8 @@ class SiftMatcher(OpenCVAlgorithm):
     def __init__(self):
         pass
 
-    def get_matches(self, query_image, train_image):
-        return super().get_matches(query_image, train_image, self.algorithm)
+    def get_matches(self, query_image, train_image, ratio):
+        return super().get_matches(query_image, train_image, self.algorithm, ratio)
 
     def matches_to_unimatches(self, matches, query_keypoints, train_keypoints):
         return super().matches_to_unimatches(matches, query_keypoints, train_keypoints)
@@ -172,8 +179,8 @@ class AkazeMatcher(OpenCVAlgorithm):
     def __init__(self):
         pass
 
-    def get_matches(self, query_image, train_image):
-        return super().get_matches(query_image, train_image, self.algorithm)
+    def get_matches(self, query_image, train_image, ratio):
+        return super().get_matches(query_image, train_image, self.algorithm, ratio)
 
     def matches_to_unimatches(self, matches, query_keypoints, train_keypoints):
         return super().matches_to_unimatches(matches, query_keypoints, train_keypoints)

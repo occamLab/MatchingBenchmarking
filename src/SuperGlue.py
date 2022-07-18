@@ -16,6 +16,7 @@ torch.set_grad_enabled(False)
 
 
 global out
+global confidence
 # Sets initial config for superglue
 parser = argparse.ArgumentParser(
     description="SuperGlue demo", formatter_class=argparse.ArgumentDefaultsHelpFormatter
@@ -159,6 +160,7 @@ def get_superglue_matches(query_image, train_image):
     kpts0 = frame_1_data["keypoints0"][0].cpu().numpy()
     kpts1 = pred["keypoints1"][0].cpu().numpy()
     matches = pred["matches0"][0].cpu().numpy()
+    global confidence
     confidence = pred["matching_scores0"][0].cpu().detach().numpy()
 
     valid = matches > -1
@@ -196,3 +198,6 @@ def get_superglue_matches(query_image, train_image):
 def draw_superglue_matches():
     plt.imshow(out)
     plt.show()
+
+def get_confidence():
+    return confidence
