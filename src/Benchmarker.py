@@ -200,21 +200,19 @@ class Benchmarker:
         total_points = []
         correct_vs_incorrect_for_one_algo = []
         for algorithm in self.algorithms:
-            for ratio in self.sweep_values:
+            for quantile in self.sweep_values:
                 for session in self.sessions:
-                    print(repr(algorithm), session, ratio)
+                    print(repr(algorithm), session, quantile)
                     for bundle in session.bundles:
                         query_image = copy(bundle.query_image)
                         train_image = copy(bundle.train_image)
 
-                        matches = algorithm.get_matches(query_image, train_image, ratio)
+                        matches = algorithm.get_matches(query_image, train_image, quantile)
 
                         try:
                             distances, final_query_image, final_train_image = self.compare_matches(bundle, matches, query_image, train_image)
                         except Exception as e:
                             print(e)
-                        # plt.scatter(depth_point_to_algo_point_distances, range(len(depth_point_to_algo_point_distances)))
-                        # plt.boxplot(depth_point_to_algo_point_distances)
 
                         # kde = stats.gaussian_kde(depth_point_to_algo_point_distances)
                         # x = np.linspace(0, max(depth_point_to_algo_point_distances), 100)
@@ -222,13 +220,9 @@ class Benchmarker:
                         # plt.plot(x, p)
                         
                         filtered_points = [x for x in distances if x < 100]
-                        try:
-                            filtered_points = [x for x in filtered_points if x < np.quantile(copy(filtered_points), 0.25, axis=0)]
-                            print(len(filtered_points))
-                        except:
-                            continue
-                        total_points_less_than_100.append(len(filtered_points))
-                        total_points.append(len(distances))
+                        if len(distances) > 0:
+                            total_points_less_than_100.append(len(filtered_points))
+                            total_points.append(len(distances))
                         # plt.hist(filtered_points)
                         # plt.xlabel("Depth point to algo point distance")
                         # plt.ylabel("No. of Points")
@@ -237,11 +231,17 @@ class Benchmarker:
                         # cv2.imwrite("query.png", final_query_image)
                         # cv2.imwrite("train.png", final_train_image)
                         # userinput = input("d")
+                        # print(sum(total_points_less_than_100), sum(total_points))
                 try:
-                    correct_vs_incorrect_for_one_algo.append((ratio, sum(total_points_less_than_100) / sum(total_points), algorithm))
-                except:
-                    print(len(total_points_less_than_100))
-                # TODO: add quantile i.e. take bottom 10% of points
+                    correct_vs_incorrect_for_one_algo.append((quantile, sum(total_points_less_than_100) / sum(total_points), algorithm))
+                    total_points_less_than_100 = []
+                    total_points = []
+                except ZeroDivisionError:
+                    print("No matches found for", repr(algorithm), session, quantile)
+                    total_points_less_than_100 = []
+                    total_points = []
+    
+                # TODO: print out the actual quantile for each quantile
         print("total", len(correct_vs_incorrect_for_one_algo))
         for x in correct_vs_incorrect_for_one_algo:
             if repr(x[-1]) == "Orb":
