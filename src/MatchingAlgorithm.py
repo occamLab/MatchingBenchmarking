@@ -65,7 +65,6 @@ class OpenCVAlgorithm(MatchingAlgorithm):
             ratio_tests.append(match.distance / nearest_neighbor.distance)
         
         ratio = np.quantile(ratio_tests, quantile)
-        print("ratio", ratio)
         # Apply ratio test (currently set to 1 so it does nothing)
         filtered_matches = [
             match

@@ -1,7 +1,6 @@
 """
 Wrapper class for pulling data from firebase storage.
 """
-from cv2 import ROTATE_90_CLOCKWISE
 import firebase_admin
 from firebase_admin import credentials, storage
 import cv2
@@ -9,37 +8,53 @@ import subprocess
 import os
 from glob import glob
 import json
+import mesh_pb2
+from google.protobuf.json_format import MessageToJson
+from progressbar import ProgressBar
 
 # sync firebase storage data with local file system
 # subprocess.call(["sh", "sync_firebase_storage.sh"])
 
-cred = credentials.Certificate("serviceAccountKey.json")
-app = firebase_admin.initialize_app(
-    cred, {"storageBucket": "depthbenchmarking.appspot.com"}
-)
-
 
 class FirebaseDataGatherer:
     def __init__(self):
-        self.bucket = storage.bucket()
-
+        pass
     def get_images_data(self):
-        path = f"{os.path.dirname(os.path.dirname(__file__))}/image_data/50lyHYG52VTfIB2OWMmCBA5elaC3/"
+        path = f"{os.path.dirname(os.path.dirname(__file__))}/image_data/wwhzbcAKGZZ7gsVHOfpDoKyWil53/"
         sessions_data = []
         for session in os.listdir(path):
+            if session.endswith(".DS_Store"):
+                print("!DS_Store")
+                continue
             session_path = f"{path}{session}/"
             session_data = []
-            for frame in os.listdir(session_path):
+            pbar = ProgressBar()
+            for frame in pbar(os.listdir(session_path)):
                 frame_data = []
                 frame_path = f"{session_path}{frame}"
                 image_data_files = glob(f"{frame_path}/*")
-                if image_data_files[0][-3:] == "jpg":
-                    image_file, json_file = image_data_files
-                else:
-                    json_file, image_file = image_data_files
+                for file in image_data_files:
+                    if file.endswith(".json"):
+                        json_file = file
+                    elif file.endswith(".jpg"):
+                        image_file = file
+                    elif file.endswith(".pb"):
+                        protobuf_file = file
                 formatted_image = cv2.imread(image_file, 0)
                 # formatted_image = cv2.rotate(image, ROTATE_90_CLOCKWISE)
                 frame_data.append(formatted_image)
+
+                # read protobuf file
+                with open(protobuf_file, 'rb') as f:
+                    read_mesh = mesh_pb2.Points()
+                    read_mesh.ParseFromString(f.read())
+                    protobuf_json = json.loads(MessageToJson(read_mesh))
+                    try:
+                        protobuf_points = [list(x.values()) for x in protobuf_json['points']]
+                        protobuf_conf = protobuf_json['confidences']
+                    except KeyError:
+                        print("No protobuf data" + str(protobuf_file)[-3:])
+                        continue
 
                 # read json
                 with open(json_file, "r") as f:
@@ -47,8 +62,8 @@ class FirebaseDataGatherer:
                     frame_data.extend(
                         [
                             # TODO convert to numpy arrays
-                            json_data["depthData"],
-                            json_data["confData"],
+                            protobuf_points,
+                            protobuf_conf,
                             json_data["pose"],
                             json_data["intrinsics"],
                         ]

@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from scipy import stats
+from progressbar import ProgressBar
 
 class Benchmarker:
     """
@@ -65,6 +66,18 @@ class Benchmarker:
         return query_depth_data
         
     def project_depth_onto_image(self, query_depth_feature_points, focal_length, offset_x, offset_y):
+        """
+        Projects depth map onto image using camera intrinsics.
+
+        Args:
+            query_depth_feature_points (numpy.ndarray): A numpy array 
+                containing the depth map's feature points.
+            focal_length (float): The focal length of the camera.
+            offset_x (float): The x offset of the camera.
+            offset_y (float): The y offset of the camera.
+        
+        Returns: A numpy array containing the projected feature points.
+        """
         pixels = []
         for row in query_depth_feature_points:
             pixel_x = row[0] * focal_length / row[2] + offset_x
@@ -203,7 +216,8 @@ class Benchmarker:
             for quantile in self.sweep_values:
                 for session in self.sessions:
                     print(repr(algorithm), session, quantile)
-                    for bundle in session.bundles:
+                    pbar = ProgressBar()
+                    for bundle in pbar(session.bundles):
                         query_image = copy(bundle.query_image)
                         train_image = copy(bundle.train_image)
 
@@ -212,7 +226,7 @@ class Benchmarker:
                         try:
                             distances, final_query_image, final_train_image = self.compare_matches(bundle, matches, query_image, train_image)
                         except Exception as e:
-                            print(e)
+                            continue
 
                         # kde = stats.gaussian_kde(depth_point_to_algo_point_distances)
                         # x = np.linspace(0, max(depth_point_to_algo_point_distances), 100)
@@ -237,7 +251,8 @@ class Benchmarker:
                     total_points_less_than_100 = []
                     total_points = []
                 except ZeroDivisionError:
-                    print("No matches found for", repr(algorithm), session, quantile)
+                    continue
+                    # print("No matches found for", repr(algorithm), session, quantile)
                     total_points_less_than_100 = []
                     total_points = []
     
@@ -257,7 +272,7 @@ class Benchmarker:
         label_sift = mpatches.Patch(color='green', label='Sift')
         label_akaze = mpatches.Patch(color='blue', label='Akaze')
         plt.legend(handles=[label_orb, label_sift, label_akaze])
-        plt.savefig("Ratio test.png")
+        plt.savefig("Ratio test pb.png")
 
 
 
