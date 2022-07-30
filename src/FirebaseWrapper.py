@@ -1,8 +1,6 @@
 """
 Wrapper class for pulling data from firebase storage.
 """
-import firebase_admin
-from firebase_admin import credentials, storage
 import cv2
 import subprocess
 import os
@@ -29,9 +27,15 @@ class FirebaseDataGatherer:
             session_path = f"{path}{session}/"
             session_data = []
             pbar = ProgressBar()
-            for frame in pbar(os.listdir(session_path)):
+            sorted_frames = []
+            for frame in os.listdir(session_path):
+                if frame.endswith(".DS_Store"):
+                    print("!DS_Store")
+                    continue
+                sorted_frames.append(glob(f"{session_path}{frame}"))
+            for frame in pbar(sorted(sorted_frames)):
                 frame_data = []
-                frame_path = f"{session_path}{frame}"
+                frame_path  = frame[0]
                 image_data_files = glob(f"{frame_path}/*")
                 for file in image_data_files:
                     if file.endswith(".json"):
