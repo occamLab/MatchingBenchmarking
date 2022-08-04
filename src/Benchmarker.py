@@ -10,6 +10,7 @@ from scipy import stats
 from progressbar import ProgressBar
 from MatchingAlgorithm import OrbMatcher
 from SessionGenerator import Bundle
+import pdb
 
 class Benchmarker:
     """
@@ -108,6 +109,7 @@ class Benchmarker:
         U, S, V_t = np.linalg.svd(W)
         R = np.dot(U, V_t)
         t = com_query - np.dot(R, com_train)
+        # pdb.set_trace()
         return R, t
 
     def convert_depth_vectors(self, depth_data):
@@ -144,15 +146,13 @@ class Benchmarker:
 
             matched_query_depth_matrix.append(np.array(query_depth_data[:,corresponding_query_depth_index]).reshape(4,1))
             matched_train_depth_matrix.append(np.array(train_depth_data[:,corresponding_train_depth_index]).reshape(4,1))
-            if len(matched_query_depth_matrix) > 3:
-                matched_query_depth_matrix = np.concatenate(matched_query_depth_matrix, axis=1)
-                matched_train_depth_matrix = np.concatenate(matched_train_depth_matrix, axis=1)
-                R, t = self.svd_rotation(matched_train_depth_matrix, matched_query_depth_matrix)
-                print("found rotation")
-                break
+        matched_query_depth_matrix = np.concatenate(matched_query_depth_matrix, axis=1)
+        matched_train_depth_matrix = np.concatenate(matched_train_depth_matrix, axis=1)
+        R, t = self.svd_rotation(matched_train_depth_matrix, matched_query_depth_matrix)
+        print("found rotation")
         return R,t
 
-    def compare_matches(self, bundle, matches, query_image, train_image, crossmatch=False, R=None, t=None):
+    def compare_matches(self, bundle, matches, query_image, train_image, crossmatch=False, R=None, t=None, count=0):
         """
         Compares the matches produced by the algorithm with the matches produced
         by the depth map data.
@@ -192,11 +192,27 @@ class Benchmarker:
         if crossmatch:
             # instead of rotating query data to project onto train data like we do below, here we are transforming the train data relative to the query data.
             # Both ways are used to align the query and train depth data together but are slightly different.
+            print("R", R)
+            print("t", t)
             rotation_applied = R @ train_depth_data
             no_pose_query_depth_data_projected_on_train = np.array([np.add(row, t) for row in rotation_applied.T]).T
 
-            pose_difference = inv(query_pose) @ train_pose
-            query_depth_data_projected_on_train = inv(pose_difference) @ no_pose_query_depth_data_projected_on_train
+            # pose_difference = inv(query_pose) @ train_pose
+            icp_transform = np.append(R[:3,:3],t[:3].reshape(3,1), axis=1)
+            icp_transform = np.append(icp_transform, [[0,0,0,1]], axis=0)
+            print(icp_transform)
+            print(train_pose.shape)
+            print(query_pose.shape)
+            # you can recover icp_transform as: inv(query_pose) @ final_transform @ train_pose
+            if count > 1:
+                query_depth_data_projected_on_train = recovered_icp_transform @ train_depth_data
+                recovered_icp_transform = inv(query_pose) @ final_transform @ train_pose
+                final_transform = query_pose @ icp_transform @ inv(train_pose)
+            else:
+                query_depth_data_projected_on_train = icp_transform @ train_depth_data
+                final_transform = query_pose @ icp_transform @ inv(train_pose)
+                count += 1
+            
         else:
             pose_difference = inv(query_pose) @ train_pose
             query_depth_data_projected_on_train = inv(pose_difference) @ query_depth_data
@@ -265,6 +281,7 @@ class Benchmarker:
         total_points_less_than_100 = []
         total_points = []
         correct_vs_incorrect_for_one_algo = []
+        total_correct_for_one_algo = []
         for algorithm in self.algorithms:
             for quantile in self.sweep_values:
                 for session in self.sessions:
@@ -274,7 +291,7 @@ class Benchmarker:
                         query_image = copy(bundle.query_image)
                         train_image = copy(bundle.train_image)
 
-                        matches = algorithm.get_matches(query_image, train_image, quantile)
+                        matches = algorithm.get_matches(query_image, train_image, quantile, ratio_not_quantile=True)
 
                         try:
                             distances, final_query_image, final_train_image = self.compare_matches(bundle, matches, query_image, train_image)
@@ -288,6 +305,7 @@ class Benchmarker:
 
                 try:
                     correct_vs_incorrect_for_one_algo.append((quantile, sum(total_points_less_than_100) / sum(total_points), algorithm))
+                    total_correct_for_one_algo.append(sum(total_points_less_than_100))
                     total_points_less_than_100 = []
                     total_points = []
                 except ZeroDivisionError:
@@ -295,23 +313,28 @@ class Benchmarker:
                     # print("No matches found for", repr(algorithm), session, quantile)
                     total_points_less_than_100 = []
                     total_points = []
-
-        print("total", len(correct_vs_incorrect_for_one_algo))
-        for x in correct_vs_incorrect_for_one_algo:
-            if repr(x[-1]) == "Orb":
-                plt.plot(x[0], x[1], 'o', color='red', label="Orb")
-            elif repr(x[-1]) == "Sift":
-                plt.plot(x[0], x[1], '^', color='green', label="Sift")
-            elif repr(x[-1]) == "Akaze":
-                plt.plot(x[0], x[1], '*', color ='blue', label="Akaze")
-        plt.xticks(self.sweep_values)
-        plt.xlabel("Quantile values")
-        plt.ylabel("Ratio of correct/total matches")
-        label_orb = mpatches.Patch(color='red', label='Orb')
-        label_sift = mpatches.Patch(color='green', label='Sift')
-        label_akaze = mpatches.Patch(color='blue', label='Akaze')
-        plt.legend(handles=[label_orb, label_sift, label_akaze])
-        plt.savefig("Ratio test pb.png")
+        
+        names = []
+        for algorithm in self.algorithms:
+            names.append(repr(algorithm))
+        plt.bar(names, total_correct_for_one_algo)
+        plt.savefig("total_points_less_than_100.png")
+        # print("total", len(correct_vs_incorrect_for_one_algo))
+        # for x in correct_vs_incorrect_for_one_algo:
+        #     if repr(x[-1]) == "Orb":
+        #         plt.plot(x[0], x[1], 'o', color='red', label="Orb")
+        #     elif repr(x[-1]) == "Sift":
+        #         plt.plot(x[0], x[1], '^', color='green', label="Sift")
+        #     elif repr(x[-1]) == "Akaze":
+        #         plt.plot(x[0], x[1], '*', color ='blue', label="Akaze")
+        # plt.xticks(self.sweep_values)
+        # plt.xlabel("Quantile values")
+        # plt.ylabel("Ratio of correct/total matches")
+        # label_orb = mpatches.Patch(color='red', label='Orb')
+        # label_sift = mpatches.Patch(color='green', label='Sift')
+        # label_akaze = mpatches.Patch(color='blue', label='Akaze')
+        # plt.legend(handles=[label_orb, label_sift, label_akaze])
+        # plt.savefig("Ratio test pb.png")
     
     def cross_benchmark(self, first_session, second_session, cross_algorithms, cross_quantiles):
         """
@@ -323,12 +346,20 @@ class Benchmarker:
         for i, bundle2 in enumerate(second_session.bundles):
             query_image = copy(bundle2.query_image)
             train_image = copy(bundle2.train_image)
-            query_matches = OrbMatcher().get_matches(query_image, first_session.bundles[0].query_image, 0.1)
-            train_matches = OrbMatcher().get_matches(train_image, first_session.bundles[0].query_image, 0.1)
+            query_matches = OrbMatcher().get_matches(query_image, first_session.bundles[0].query_image, 0.6, ratio_not_quantile=True)
+            train_matches = OrbMatcher().get_matches(train_image, first_session.bundles[0].query_image, 0.6, ratio_not_quantile=True)
             if len(query_matches) > 4:
                 index_matched = i
                 print("match")
                 R, t = self.get_transformation(first_session.bundles[0].query_image_depth_map, bundle2.query_image_depth_map, query_matches)
+                # for point in query_matches:
+                #     matched_query_keypoint = (int(point.queryPt.x), int(point.queryPt.y))
+                #     matched_train_keypoint = (int(point.trainPt.x), int(point.trainPt.y))
+                #     out_query_image = self.draw_circle(query_image, matched_query_keypoint, (255, 255, 255))
+                #     out_train_image = self.draw_circle(first_session.bundles[0].query_image, matched_train_keypoint, (255, 255, 255))
+                # out = np.concatenate((out_query_image, out_train_image), axis=1)
+                # cv2.imshow("out", out)
+                # cv2.waitKey(0)
                 break
             if len(train_matches) > 4:
                 index_matched = i
@@ -339,6 +370,7 @@ class Benchmarker:
             print("No matches found")
             return None
         else:
+            print(index_matched)
             total_points_less_than_100 = []
             total_points = []
             correct_vs_incorrect_for_one_algo = []
