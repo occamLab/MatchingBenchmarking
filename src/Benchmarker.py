@@ -6,11 +6,10 @@ from copy import copy
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-from scipy import stats
 from progressbar import ProgressBar
 from MatchingAlgorithm import OrbMatcher
 from SessionGenerator import Bundle
-import pdb
+import pandas as pd
 
 class Benchmarker:
     """
@@ -127,7 +126,7 @@ class Benchmarker:
 
     def get_transformation(self, query_data, train_data, matches):
         """
-        Returns the transformation matrix for the given bundle.
+        Returns the transformation matrix to project train data onto query data for the given bundle.
         """
         matched_query_depth_matrix = []
         matched_train_depth_matrix = []
@@ -282,6 +281,7 @@ class Benchmarker:
         total_points = []
         correct_vs_incorrect_for_one_algo = []
         total_correct_for_one_algo = []
+        output_data = []
         for algorithm in self.algorithms:
             for quantile in self.sweep_values:
                 for session in self.sessions:
@@ -292,11 +292,20 @@ class Benchmarker:
                         train_image = copy(bundle.train_image)
 
                         matches = algorithm.get_matches(query_image, train_image, quantile, ratio_not_quantile=True)
-
                         try:
                             distances, final_query_image, final_train_image = self.compare_matches(bundle, matches, query_image, train_image)
+                            out_dict = {
+                                "bundle": bundle,
+                                "matches": matches,
+                                "distances": distances,
+                                "algorithm": algorithm,
+                                "quantile": quantile,
+                            }
+                            out_df = pd.DataFrame(out_dict)
+                            output_data.append(out_df)
+                            # print("distances", len(distances))
                         except Exception as e:
-                            continue
+                            print(e)
                         
                         filtered_points = [x for x in distances if x < 100]
                         if len(distances) > 0:
@@ -314,27 +323,7 @@ class Benchmarker:
                     total_points_less_than_100 = []
                     total_points = []
         
-        names = []
-        for algorithm in self.algorithms:
-            names.append(repr(algorithm))
-        plt.bar(names, total_correct_for_one_algo)
-        plt.savefig("total_points_less_than_100.png")
-        # print("total", len(correct_vs_incorrect_for_one_algo))
-        # for x in correct_vs_incorrect_for_one_algo:
-        #     if repr(x[-1]) == "Orb":
-        #         plt.plot(x[0], x[1], 'o', color='red', label="Orb")
-        #     elif repr(x[-1]) == "Sift":
-        #         plt.plot(x[0], x[1], '^', color='green', label="Sift")
-        #     elif repr(x[-1]) == "Akaze":
-        #         plt.plot(x[0], x[1], '*', color ='blue', label="Akaze")
-        # plt.xticks(self.sweep_values)
-        # plt.xlabel("Quantile values")
-        # plt.ylabel("Ratio of correct/total matches")
-        # label_orb = mpatches.Patch(color='red', label='Orb')
-        # label_sift = mpatches.Patch(color='green', label='Sift')
-        # label_akaze = mpatches.Patch(color='blue', label='Akaze')
-        # plt.legend(handles=[label_orb, label_sift, label_akaze])
-        # plt.savefig("Ratio test pb.png")
+        return output_data
     
     def cross_benchmark(self, first_session, second_session, cross_algorithms, cross_quantiles):
         """
@@ -343,6 +332,11 @@ class Benchmarker:
         index_matched = None
         R = None
         t = None
+        # TODO: add april tags to the images for a better cross match marker.
+        # TODO: Does Clew have a version with depth data collection cuz Marc lost his computer and we don't want to write a new one.
+        # TODO: return some form of structured data with like matches or smth.
+        # TODO: use google cloud anchors visual alignment thingy.
+        # TODO: meetup with Paul to sit together and implement more data logging in the latest version of Clew with the cloud anchors and stuff.
         for i, bundle2 in enumerate(second_session.bundles):
             query_image = copy(bundle2.query_image)
             train_image = copy(bundle2.train_image)
