@@ -1,3 +1,3 @@
 #!/bin/bash
 
-gsutil -m rsync -r gs://depthbenchmarking.appspot.com/visual_alignment_benchmarking $(dirname $(pwd))/image_data
+gsutil -m rsync -r gs://clew-sandbox/visual_alignment_benchmarking $(dirname $(pwd))/image_data_2
