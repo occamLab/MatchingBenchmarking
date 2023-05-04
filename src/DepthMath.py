@@ -82,6 +82,8 @@ def map_depth(bundle, keypoints, query_image, train_image):
 
     pose_difference = inv(query_pose) @ train_pose
 
+    print(pose_difference)
+
     query_depth_data_projected_on_train = inv(pose_difference) @ query_depth_data
     projected_depth_feature_points = np.array(
         (
@@ -93,6 +95,7 @@ def map_depth(bundle, keypoints, query_image, train_image):
 
     pixels = []
     pixels = project_depth_onto_image(projected_depth_feature_points, focal_length, offset_x, offset_y)
+
 
     final_train_image = plot_depth_map(pixels, train_image)
 
@@ -123,18 +126,17 @@ def map_depth(bundle, keypoints, query_image, train_image):
         final_train_image  = draw_circle(final_train_image, depth_matched_point, (255,255,255))
         
         # draw line between algo matched point and depth matched point
-        final_train_image = cv2.line(
-            final_train_image,
-            algo_matched_point,
-            depth_matched_point,
-            (
-                255,
-                255,
-                255,
-            ),
-            1,
-        )
-
+        # final_train_image = cv2.line(
+        #     final_train_image,
+        #     algo_matched_point,
+        #     depth_matched_point,
+        #     (
+        #         255,
+        #         255,
+        #         255,
+        #     ),
+        #     1,
+        # )
         depth_point_to_algo_point_distances.append(np.linalg.norm(algo_matched_point - depth_matched_point))
 
     # plt.scatter(depth_point_to_algo_point_distances, range(len(depth_point_to_algo_point_distances)))
@@ -145,27 +147,33 @@ def map_depth(bundle, keypoints, query_image, train_image):
     # p = kde(x)
     # plt.plot(x, p)
 
+
     filtered_points = [x for x in depth_point_to_algo_point_distances if x < 100]
 
-    plt.hist(filtered_points)
-    depth_point_to_algo_point_distances = []
-    plt.xlabel("Depth point to algo point distance")
-    plt.ylabel("No. of Points")
-    plt.savefig('depth_point_to_algo_point_distances.png')
-    plt.clf()
+    try:
+        print(len(filtered_points)/len(depth_point_to_algo_point_distances))
+    except ZeroDivisionError:
+        print("no matches")
+
+    # plt.hist(filtered_points)
+    # depth_point_to_algo_point_distances = []
+    # plt.xlabel("Depth point to algo point distance")
+    # plt.ylabel("No. of Points")
+    # plt.show()
+    # plt.clf()
     cv2.imwrite("query.png", final_query_image)
     cv2.imwrite("train.png", final_train_image)
     userinput = input("d")
 
 
-session = Benchmarker("Temp").sessions[1]
+session = Benchmarker([OrbMatcher(), SiftMatcher(), AkazeMatcher()], [0.1, 0.25, 0.45, 0.85]).sessions[0]
 
 for bundle in session.bundles:
 
     query_image = copy(bundle.query_image)
     train_image = copy(bundle.train_image)
 
-    new_superglue_matcher = SiftMatcher().get_matches(query_image, train_image)
+    new_superglue_matcher = AkazeMatcher().get_matches(query_image, train_image, 0.45)
 
     map_depth(bundle, new_superglue_matcher, query_image, train_image)
     

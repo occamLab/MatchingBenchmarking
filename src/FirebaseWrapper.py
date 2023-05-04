@@ -17,8 +17,42 @@ from progressbar import ProgressBar
 class FirebaseDataGatherer:
     def __init__(self):
         pass
-    def get_images_data(self):
-        path = f"{os.path.dirname(os.path.dirname(__file__))}/image_data/wwhzbcAKGZZ7gsVHOfpDoKyWil53/"
+
+    def sort_metadata_jsons(self):
+        route_names_path = f"{os.path.dirname(os.path.dirname(__file__))}/image_data_good/NcsslHgGt7OcPalBU90raZOBcqP2/"
+        metadata_jsons_path = f"{os.path.dirname(os.path.dirname(__file__))}/image_data_good_logs/NcsslHgGt7OcPalBU90raZOBcqP2/"
+
+        for json_file in os.listdir(metadata_jsons_path):
+            if json_file.endswith(".DS_Store"):
+                print("!DS_Store")
+                continue
+            if json_file.endswith("metadata.json"):
+                with open(f"{metadata_jsons_path}{json_file}", "r") as f:
+                    json_data = json.load(f)
+                    try:
+                        ARDataDir = json_data["ARLoggerDataDir"].split("/")[1:]
+                        route_name = "/".join(ARDataDir)
+                        pathdata_json = json_file[:-(len("-0_metadata.json"))]+"_pathdata.json"
+
+                        # move metadata, pathdata jsons to route folder
+                        # subprocess.call(            
+                        #     [
+                        #         "cp",
+                        #         f"{metadata_jsons_path}{json_file}",
+                        #         f"{metadata_jsons_path}{pathdata_json}",
+                        #         f"{route_names_path}{route_name}/",
+                        #     ]
+                        # )
+                    except KeyError:
+                        print("No ARLoggerDataDir")
+                        continue
+
+        
+
+    def get_sessions_data(self):
+        # image_data/wwhzbcAKGZZ7gsVHOfpDoKyWil53/
+        # image_data_good/NcsslHgGt7OcPalBU90raZOBcqP2/ Confident water fountain 
+        path = f"{os.path.dirname(os.path.dirname(__file__))}/image_data_good/NcsslHgGt7OcPalBU90raZOBcqP2/ Confident water fountain /NcsslHgGt7OcPalBU90raZOBcqP2/"
         sessions_data = []
         for session in os.listdir(path):
             if session.endswith(".DS_Store"):
@@ -26,16 +60,31 @@ class FirebaseDataGatherer:
                 continue
             session_path = f"{path}{session}/"
             session_data = []
+            all_metadata = {}
+            for files in os.listdir(session_path):
+                if files.endswith("metadata.json"):
+                    with open(f"{session_path}{files}", "r") as f:
+                        metadata = json.load(f)
+                        for key in metadata:
+                            all_metadata[key] = metadata[key]
+                elif files.endswith("pathdata.json"):
+                    with open(f"{session_path}{files}", "r") as f:
+                        pathdata = json.load(f)
+                        for key in pathdata:
+                            all_metadata[key] = pathdata[key]
+                elif files.endswith("log.json"):
+                    with open(f"{session_path}{files}", "r") as f:
+                        logdata = json.load(f)
+                        all_metadata["cloudAnchorResolvedTimestamp"] = logdata
             pbar = ProgressBar()
             sorted_frames = []
             for frame in os.listdir(session_path):
                 if frame.endswith(".DS_Store"):
                     print("!DS_Store")
                     continue
-                sorted_frames.append(glob(f"{session_path}{frame}"))
-            for frame in pbar(sorted(sorted_frames)):
+                sorted_frames.append(glob(f"{session_path}{frame}")[0])
+            for frame_path in pbar(sorted(sorted_frames)):
                 frame_data = []
-                frame_path  = frame[0]
                 image_data_files = glob(f"{frame_path}/*")
                 for file in image_data_files:
                     if file.endswith(".json"):
@@ -44,8 +93,9 @@ class FirebaseDataGatherer:
                         image_file = file
                     elif file.endswith(".pb"):
                         protobuf_file = file
+                
+                # read image
                 formatted_image = cv2.imread(image_file, 0)
-                # formatted_image = cv2.rotate(image, ROTATE_90_CLOCKWISE)
                 frame_data.append(formatted_image)
 
                 # read protobuf file
@@ -54,10 +104,11 @@ class FirebaseDataGatherer:
                     read_mesh.ParseFromString(f.read())
                     protobuf_json = json.loads(MessageToJson(read_mesh))
                     try:
-                        protobuf_points = [list(x.values()) for x in protobuf_json['points']]
+                        protobuf_points = [list(x.values())
+                                           for x in protobuf_json['points']]
                         protobuf_conf = protobuf_json['confidences']
                     except KeyError:
-                        print("No protobuf data" + str(protobuf_file)[-3:])
+                        print("No protobuf data" + str(protobuf_file))
                         continue
 
                 # read json
@@ -70,8 +121,9 @@ class FirebaseDataGatherer:
                             protobuf_conf,
                             json_data["pose"],
                             json_data["intrinsics"],
+                            json_data["timestamp"],
                         ]
                     )
                 session_data.append(frame_data)
-            sessions_data.append(session_data)
+            sessions_data.append([all_metadata, session_data])
         return sessions_data

@@ -11,6 +11,6 @@ include/
 models/
 Scripts/
 serviceAccountKey.json
-sessions.pkl
-image_data/*
+*.pkl
+image_data*/*
 !image_data/.gitkeep

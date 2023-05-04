@@ -1,5 +1,6 @@
 import os
 import pickle
+import json
 
 
 class Bundle:
@@ -35,11 +36,13 @@ class Bundle:
             self.query_image_confidence_map,
             self.query_image_pose,
             self.query_image_intrinsics,
+            self.query_image_timestamp,
             self.train_image,
             self.train_image_depth_map,
             self.train_image_confidence_map,
             self.train_image_pose,
             self.train_image_intrinsics,
+            self.train_image_timestamp,
         ) = bundle_data
 
 
@@ -53,7 +56,8 @@ class Session:
             of images captured in the same session.
     """
 
-    def __init__(self, session_data):
+    def __init__(self, all_metadata, session_data):
+        self.all_metadata = all_metadata
         self.bundles = session_data
 
 
@@ -89,12 +93,15 @@ class SessionGenerator:
             A list of session objects, each session contains a
             number of bundles.
         """
+
         sessions_bundle_data = []
-        for images_data in sessions_data:
+        for all_metadata, session_data in sessions_data:
             session_bundle_data = []
-            for i in range(0, len(images_data) - 1):
-                session_bundle_data.append(Bundle(images_data[i] + images_data[i + 1]))
-            sessions_bundle_data.append(Session(session_bundle_data))
+            for i in range(0, len(session_data) - 1):
+                session_bundle_data.append(
+                    Bundle(session_data[i] + session_data[i + 1]))
+            sessions_bundle_data.append(
+                Session(all_metadata, session_bundle_data))
         return sessions_bundle_data
 
     def save_sessions(self):
@@ -104,4 +111,4 @@ class SessionGenerator:
         sessions_file_path = f"{self.sessions_path}sessions.pkl"
         with open(sessions_file_path, "wb") as sessions_file:
             print("saved!")
-            pickle.dump(self.sessions, sessions_file, pickle.HIGHEST_PROTOCOL)
+            pickle.dump(self, sessions_file, pickle.HIGHEST_PROTOCOL)
