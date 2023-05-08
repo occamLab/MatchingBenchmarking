@@ -18,7 +18,9 @@ import cv2
 import numpy as np
 from progressbar import ProgressBar
 from Benchmarker import Benchmarker
+import matplotlib.pyplot as plt
 import sys
+
 sys.path.append("..")
 
 
@@ -27,7 +29,7 @@ def compare_matches(benchmarker, bundle, matches, query_image, train_image):
     Compares the matches produced by the algorithm with the matches produced
     by the depth map data.
 
-    Args: 
+    Args:
         bundle (Bundle): A Bundle object containing the data about the query and train images.
         matches (list): A list of UniMatch objects produced by the algorithm.
         query_image (numpy.ndarray): The query image.
@@ -41,10 +43,8 @@ def compare_matches(benchmarker, bundle, matches, query_image, train_image):
     offset_x = bundle.query_image_intrinsics[6]
     offset_y = bundle.query_image_intrinsics[7]
 
-    query_depth_data = benchmarker.convert_depth_vectors(
-        bundle.query_image_depth_map)
-    train_depth_data = benchmarker.convert_depth_vectors(
-        bundle.train_image_depth_map)
+    query_depth_data = benchmarker.convert_depth_vectors(bundle.query_image_depth_map)
+    train_depth_data = benchmarker.convert_depth_vectors(bundle.train_image_depth_map)
 
     # Actual depth feature points, with magnitude removed from the vector.
     query_depth_feature_points = np.array(
@@ -53,18 +53,19 @@ def compare_matches(benchmarker, bundle, matches, query_image, train_image):
 
     # calculate depths and pixels of feature points
     pixels = benchmarker.project_depth_onto_image(
-        query_depth_feature_points, focal_length, offset_x, offset_y)
+        query_depth_feature_points, focal_length, offset_x, offset_y
+    )
 
     final_query_image = benchmarker.plot_depth_map(
-        bundle.query_image_depth_map, pixels, query_image)
+        bundle.query_image_depth_map, pixels, query_image
+    )
 
     # reshape query and train pose matrices
     query_pose = np.array(bundle.query_image_pose).reshape(4, 4).T
     train_pose = np.array(bundle.train_image_pose).reshape(4, 4).T
 
     pose_difference = inv(query_pose) @ train_pose
-    query_depth_data_projected_on_train = inv(
-        pose_difference) @ query_depth_data
+    query_depth_data_projected_on_train = inv(pose_difference) @ query_depth_data
 
     projected_depth_feature_points = np.array(
         (
@@ -76,26 +77,27 @@ def compare_matches(benchmarker, bundle, matches, query_image, train_image):
 
     pixels = []
     pixels = benchmarker.project_depth_onto_image(
-        projected_depth_feature_points, focal_length, offset_x, offset_y)
-    
+        projected_depth_feature_points, focal_length, offset_x, offset_y
+    )
+
     count = 0
     for pixel in pixels:
-        if int(pixel[0]) in range(0, bundle.train_image.shape[0]) and int(pixel[1]) in range(0, bundle.train_image.shape[1]):
+        if int(pixel[0]) in range(0, bundle.train_image.shape[0]) and int(
+            pixel[1]
+        ) in range(0, bundle.train_image.shape[1]):
             count += 1
 
-    print(
-        f"count: {count}, pixels: {len(pixels)}, percentage: {count/len(pixels)}")
+    print(f"count: {count}, pixels: {len(pixels)}, percentage: {count/len(pixels)}")
 
     final_train_image = benchmarker.plot_depth_map(
-        bundle.query_image_depth_map, pixels, train_image)
+        bundle.query_image_depth_map, pixels, train_image
+    )
 
     depth_point_to_algo_point_distances = []
     # Project corresponding query image keypoints onto train image which are matched using depth map data
     for unimatch in matches:
-        matched_query_keypoint = (
-            int(unimatch.queryPt.x), int(unimatch.queryPt.y))
-        matched_train_keypoint = (
-            int(unimatch.trainPt.x), int(unimatch.trainPt.y))
+        matched_query_keypoint = (int(unimatch.queryPt.x), int(unimatch.queryPt.y))
+        matched_train_keypoint = (int(unimatch.trainPt.x), int(unimatch.trainPt.y))
 
         # get corresponding depth map index for each keypoint.
         # Keypoints in a rectangular area around a depth index are matched to same index.
@@ -106,20 +108,28 @@ def compare_matches(benchmarker, bundle, matches, query_image, train_image):
 
         # Draw query image keypoints
         final_query_image = benchmarker.draw_circle(
-            final_query_image, matched_query_keypoint, (0, 0, 0))
+            final_query_image, matched_query_keypoint, (0, 0, 0)
+        )
 
         algo_matched_point = np.array(
-            (matched_train_keypoint[0], matched_train_keypoint[1]))
-        depth_matched_point = np.array((int(pixels[corresponding_depth_index][0]), int(
-            pixels[corresponding_depth_index][1])))
+            (matched_train_keypoint[0], matched_train_keypoint[1])
+        )
+        depth_matched_point = np.array(
+            (
+                int(pixels[corresponding_depth_index][0]),
+                int(pixels[corresponding_depth_index][1]),
+            )
+        )
 
         # Draw train image keypoints, matched using the algorithm
         final_train_image = benchmarker.draw_circle(
-            final_train_image, algo_matched_point, (0, 0, 0))
+            final_train_image, algo_matched_point, (0, 0, 0)
+        )
 
         # Plots corresponding depth point from query image on train image, matched using the depth data
         final_train_image = benchmarker.draw_circle(
-            final_train_image, depth_matched_point, (255, 255, 255))
+            final_train_image, depth_matched_point, (255, 255, 255)
+        )
 
         # draw line between algo matched point and depth matched point
         final_train_image = cv2.line(
@@ -135,16 +145,42 @@ def compare_matches(benchmarker, bundle, matches, query_image, train_image):
         )
 
         depth_point_to_algo_point_distances.append(
-            np.linalg.norm(algo_matched_point - depth_matched_point))
+            np.linalg.norm(algo_matched_point - depth_matched_point)
+        )
     cv2.imwrite("query.png", final_query_image)
     cv2.imwrite("train.png", final_train_image)
-    # pause execution to view pairs of images
-    _ = input("Press Enter to continue...")
+
+    # create figure
+    fig = plt.figure(figsize=(10, 7))
+
+    # setting values to rows and column variables
+    rows = 1
+    columns = 2
+
+    # Adds a subplot at the 1st position
+    fig.add_subplot(rows, columns, 1)
+
+    # showing image
+    plt.imshow(final_query_image, cmap="gray")
+    plt.axis("off")
+    plt.title("First image")
+
+    # Adds a subplot at the 2nd position
+    fig.add_subplot(rows, columns, 2)
+
+    # showing image
+    plt.imshow(final_train_image, cmap="gray")
+    plt.axis("off")
+    plt.title("Projected second image")
+
+    plt.show()
+
+    _ = input("Press enter to continue")
 
     return depth_point_to_algo_point_distances, final_query_image, final_train_image
 
 
-def benchmark(benchmarker):
+def benchmark(benchmarker, num_runs=None):
     """
     Scores each algorithm based on how close their matches are with matches
     produced by the bundle data for each image pair.
@@ -162,18 +198,20 @@ def benchmark(benchmarker):
 
     for algorithm in benchmarker.algorithms:
         for quantile in benchmarker.sweep_values:
-            for session in benchmarker.sessions:
+            for session in benchmarker.sessions[:num_runs]:
                 print(repr(algorithm), session, quantile)
                 pbar = ProgressBar()
-                for bundle in pbar(session.bundles):
+                for bundle in pbar(session.bundles[:num_runs]):
                     query_image = copy(bundle.query_image)
                     train_image = copy(bundle.train_image)
 
                     matches = algorithm.get_matches(
-                        query_image, train_image, quantile, ratio_not_quantile=True)
+                        query_image, train_image, quantile, ratio_not_quantile=True
+                    )
                     # try:
                     distances, final_query_image, final_train_image = compare_matches(
-                        benchmarker, bundle, matches, query_image, train_image)
+                        benchmarker, bundle, matches, query_image, train_image
+                    )
                     out_dict = {
                         "bundle": bundle,
                         "matches": matches,
@@ -188,14 +226,17 @@ def benchmark(benchmarker):
                     # find number of points that are less than 100 pixels away from the correct point
                     filtered_points = [x for x in distances if x < 100]
                     if len(distances) > 0:
-                        total_points_less_than_100.append(
-                            len(filtered_points))
+                        total_points_less_than_100.append(len(filtered_points))
                         total_points.append(len(distances))
             try:
                 correct_vs_incorrect_for_one_algo.append(
-                    (quantile, sum(total_points_less_than_100) / sum(total_points), algorithm))
-                total_correct_for_one_algo.append(
-                    sum(total_points_less_than_100))
+                    (
+                        quantile,
+                        sum(total_points_less_than_100) / sum(total_points),
+                        algorithm,
+                    )
+                )
+                total_correct_for_one_algo.append(sum(total_points_less_than_100))
                 total_points_less_than_100 = []
                 total_points = []
             except ZeroDivisionError:
