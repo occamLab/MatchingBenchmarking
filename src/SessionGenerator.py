@@ -26,7 +26,6 @@ class Bundle:
         train_image_pose: The pose of the train_image. (Need Type)
         train_image_intrinsics: The intrinsics of the camera when the train
             image was captured in the RealityKit session. (Need Type)
-
     """
 
     def __init__(self, bundle_data):
@@ -99,9 +98,9 @@ class SessionGenerator:
             session_bundle_data = []
             for i in range(0, len(session_data) - 1):
                 session_bundle_data.append(
-                    Bundle(session_data[i] + session_data[i + 1]))
-            sessions_bundle_data.append(
-                Session(all_metadata, session_bundle_data))
+                    Bundle(session_data[i] + session_data[i + 1])
+                )
+            sessions_bundle_data.append(Session(all_metadata, session_bundle_data))
         return sessions_bundle_data
 
     def save_sessions(self):

@@ -44,10 +44,17 @@ def compare_cloud_matches(
         s1_bundle.query_image_depth_map, pixels, s1_bundle.query_image
     )
 
+    camera_1_to_s1 = np.array(s1_bundle.query_image_pose).reshape(4, 4).T
+    camera_2_to_s2 = np.array(s2_bundle.query_image_pose).reshape(4, 4).T
+
     # Find the pose difference between the two sessions
     s2_to_s1 = inv(cloud_to_s1) @ cloud_to_s2
+    camera_2_to_camera_1 = inv(camera_1_to_s1) @ s2_to_s1 @ camera_2_to_s2
+    print("camera_2_to_camera_1", camera_2_to_camera_1[:, -1])
+    print("s2_to_s1", s2_to_s1[:, -1])
 
-    query_depth_data_projected_on_train = inv(s2_to_s1) @ query_depth_data
+    query_depth_data_projected_on_train = inv(camera_2_to_camera_1) @ query_depth_data
+    print(query_depth_data[2, :])
 
     projected_depth_feature_points = np.array(
         (
@@ -75,8 +82,6 @@ def compare_cloud_matches(
         s1_bundle.query_image_depth_map, pixels, s2_bundle.query_image
     )
 
-    overlap_img = cv2.addWeighted(final_query_image, 0.5, final_train_image, 0.5, 0)
-    cv2.imwrite("overlap.png", overlap_img)
     cv2.imwrite("query.png", final_query_image)
     cv2.imwrite("train.png", final_train_image)
 
@@ -128,20 +133,21 @@ def cloud_anchor_pose_test(benchmarker, num_runs=None):
     print(len(first_session.bundles))
     print(len(second_session.bundles))
 
-    first_session_cloud = first_session.all_metadata["garAnchors"]  # garAnchors (list of lists)
+    first_session_cloud = first_session.all_metadata[
+        "garAnchors"
+    ]  # garAnchors (list of lists)
     second_session_cloud = second_session.all_metadata["garAnchors"]
 
     # get matching pairs of cloud anchors from the two sessions
     gar_anchors_filtered = []
     for first_session_anchors in first_session_cloud:
+        valid_first_session_anchors = []
+
+        # get all valid anchors from first session
+        for anchor in first_session_anchors:
+            if anchor["hasValidTransform"] and anchor["cloudIdentifier"] != "":
+                valid_first_session_anchors.append(anchor)
         for second_session_anchors in second_session_cloud:
-            valid_first_session_anchors = []
-
-            # get all valid anchors from first session
-            for anchor in first_session_anchors:
-                if anchor["hasValidTransform"] and anchor["cloudIdentifier"] != "":
-                    valid_first_session_anchors.append(anchor)
-
             # loop through anchors from second session and find matches with first session
             for anchor in second_session_anchors:
                 for first_session_anchor in valid_first_session_anchors:
@@ -152,9 +158,17 @@ def cloud_anchor_pose_test(benchmarker, num_runs=None):
                     ):
                         gar_anchors_filtered.append((first_session_anchor, anchor))
 
+    print(gar_anchors_filtered[0][0]["cloudIdentifier"])
+    print(gar_anchors_filtered[0][1]["cloudIdentifier"])
+
+    print(gar_anchors_filtered[0][0]["transform"])
+    print(gar_anchors_filtered[0][1]["transform"])
+
+    print("total matching pairs: ", len(gar_anchors_filtered))
+
     # get the transforms from the first two matching cloud anchors
-    cloud_to_s1 = np.array(gar_anchors_filtered[0][0]["transform"]).reshape(4, 4).T
-    cloud_to_s2 = np.array(gar_anchors_filtered[0][1]["transform"]).reshape(4, 4).T
+    cloud_to_s1 = np.array(gar_anchors_filtered[1][0]["transform"]).reshape(4, 4).T
+    cloud_to_s2 = np.array(gar_anchors_filtered[1][1]["transform"]).reshape(4, 4).T
 
     # run LIDAR pose transformation test on pairs of images from the two sessions
     # using the transforms from the first two matching cloud anchors

@@ -6,7 +6,9 @@ from MatchingAlgorithm import OrbMatcher, SiftMatcher, AkazeMatcher
 import benchmarkers.CloudBenchmark as cbm
 import benchmarkers.PairBenchmark as pbm
 
-# run these lines once per dataset in Firebase 🙏🏼
+# run these lines once per dataset in Firebase
+# These download the data from Firebase and sort it into the correct folders
+# and create the pickle files for the sessions
 ############################################
 # fireBaseDataGatherer = FirebaseDataGatherer()
 # fireBaseDataGatherer.sort_metadata_jsons()
@@ -18,5 +20,5 @@ import benchmarkers.PairBenchmark as pbm
 
 algorithms = [OrbMatcher()]
 values = [0.5]
-# cbm.run_benchmark(algorithms, values)
-pbm.run_benchmark(algorithms, values)
+cbm.run_benchmark(algorithms, values)
+# pbm.run_benchmark(algorithms, values)

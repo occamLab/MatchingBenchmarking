@@ -10,9 +10,14 @@ import mesh_pb2
 from google.protobuf.json_format import MessageToJson
 from progressbar import ProgressBar
 
+# run these once:
+#--------------------------------------------
 # sync firebase storage data with local file system
 # subprocess.call(["sh", "sync_firebase_storage.sh"])
 
+# untar all files into correct directories
+# subprocess.call(["sh", "untar.sh"])
+# --------------------------------------------
 
 class FirebaseDataGatherer:
     def __init__(self):
